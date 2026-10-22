@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kalla kvarter — Build 3.1: Samlad HUD</title>
+<style>
+:root{--bg:#090d0e;--panel:#111a1b;--line:#314244;--text:#e7eee8;--muted:#91a5a0;--lime:#b8d67a;--red:#e16b5d}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#182425,#080b0c 70%);color:var(--text);font:14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;min-height:100vh;display:flex;justify-content:center;padding:22px}
+main{width:min(1100px,100%)}header{display:flex;justify-content:space-between;align-items:end;gap:16px;margin:0 0 14px;flex-wrap:wrap}.eyebrow{color:var(--lime);letter-spacing:.2em;font-size:11px}h1{font-size:clamp(25px,4vw,42px);letter-spacing:.04em;margin:3px 0 0;text-shadow:3px 3px #273737}h1 span{color:var(--lime)}.sub{color:var(--muted);font-size:12px}.status{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);background:#101819;padding:7px 10px;color:var(--muted);font-size:11px}.pill b{color:var(--text)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:12px}.gamewrap{position:relative;background:#111819;border:1px solid #405252;padding:7px;box-shadow:0 14px 50px #0008}canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:#222d2b;outline:none}.overlay{position:absolute;inset:7px;display:flex;align-items:center;justify-content:center;background:#070b0cce;text-align:center;padding:24px}.overlay.hidden{display:none}.modal{max-width:420px}.modal h2{font-size:26px;margin:0 0 8px;color:var(--lime)}.modal p{color:#c1ceca;line-height:1.7}.start{border:1px solid var(--lime);background:var(--lime);color:#121817;padding:12px 20px;font:inherit;font-weight:bold;cursor:pointer}.side{display:flex;flex-direction:column;gap:10px}.panel{background:linear-gradient(145deg,#152021,#0d1314);border:1px solid var(--line);padding:13px}.panel h3{font-size:11px;letter-spacing:.15em;color:var(--lime);margin:0 0 12px}.stat{display:flex;justify-content:space-between;gap:8px;margin:9px 0;color:var(--muted);font-size:12px}.stat strong{color:var(--text)}.bar{height:7px;background:#273334;margin-top:5px}.bar i{display:block;height:100%;width:100%;background:var(--lime);transition:width .15s}.bar.red i{background:var(--red)}.inventory{display:grid;grid-template-columns:1fr 1fr;gap:7px}.item{border:1px solid #2b3b3b;padding:8px;background:#101718;color:var(--muted);font-size:11px}.item b{display:block;color:var(--text);font-size:17px;margin-top:3px}.log{color:var(--muted);font-size:11px;line-height:1.65;min-height:66px}.log div:first-child{color:#e3e9dd}.controls{color:var(--muted);font-size:11px;line-height:1.8}.key{display:inline-block;border:1px solid #516361;background:#1a2525;color:#e8eee8;padding:1px 5px;min-width:20px;text-align:center}.bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#738782;font-size:10px;margin-top:12px}.shop{position:fixed;inset:0;z-index:20;background:#050909d9;display:flex;align-items:center;justify-content:center;padding:16px}.shop.hidden{display:none}.shopbox{width:min(620px,100%);max-height:90vh;overflow:auto;background:#111a1b;border:2px solid #b8d67a;box-shadow:0 20px 80px #000;padding:20px}.shophead{display:flex;justify-content:space-between;gap:12px;align-items:start}.shophead h2{margin:0;color:#b8d67a}.shopgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:16px 0}.shopitem{border:1px solid #314244;background:#0b1112;padding:12px}.shopitem b{display:block;margin-bottom:4px}.shopitem p{font-size:11px;color:#91a5a0;min-height:32px}.shopitem button,.shopclose{background:#b8d67a;color:#101615;border:0;padding:9px 12px;font:inherit;font-weight:bold;cursor:pointer}.shopclose{background:#293736;color:#e7eee8;border:1px solid #516361}.shopnote{font-size:12px;color:#91a5a0}.statbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.statbtn{background:#182323;border:1px solid #526b56;color:#dce8ce;padding:7px 5px;font:inherit;font-size:10px;cursor:pointer}.statbtn:disabled{opacity:.35;cursor:not-allowed}.xpbar{height:8px;background:#273334;margin:5px 0 8px}.xpbar i{display:block;height:100%;width:0;background:#72d6c2;transition:width .15s}.treegrid{display:grid;grid-template-columns:1fr;gap:7px;margin-top:8px}.treenode{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;background:#111b1c;border:1px solid #3c5550;color:#e7eee8;padding:9px;font:inherit;font-size:11px;cursor:pointer}.treenode b{color:#b8d67a}.treenode:disabled{opacity:.42;cursor:not-allowed}.treedesc{font-size:10px;color:#91a5a0;line-height:1.5;margin-top:7px}.mobile{display:none;gap:8px;justify-content:center;margin-top:10px}.mobile button{background:#182323;border:1px solid #405252;color:#e7eee8;padding:13px 16px;font:inherit;touch-action:none}
+@media(max-width:780px){body{padding:10px}.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.side .wide{grid-column:1/-1}.mobile{display:flex}.status{display:none}}
+
+.progression-combined{grid-column:1/-1;margin:12px auto 0;width:100%;max-width:100%;text-align:center;padding:18px}.progression-title{display:flex;justify-content:center;align-items:center;gap:18px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}.progression-title h3{margin:0}.points-pill{border:1px solid #65745c;color:var(--lime);padding:5px 10px;background:#101718;font-weight:bold;font-size:12px}.progression-columns{display:grid;grid-template-columns:minmax(240px,.8fr) minmax(0,1.5fr);gap:18px;align-items:start;text-align:left}.progression-stats,.progression-talents{min-width:0;border:1px solid #2b3b3b;background:#0e1516;padding:14px;border-radius:4px}.progression-stats .stat{max-width:440px;margin-left:auto;margin-right:auto}.progression-stats .statbtns{max-width:440px;margin-left:auto;margin-right:auto}.progression-stats .shopnote{text-align:center}.progression-talents>h3{text-align:center}.progression-talents .shopnote{text-align:center}.progression-talents .treegrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.treenode{min-height:66px;text-align:left;align-items:center}.inventory{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}.item{text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:58px}.item b{text-align:center}.side{align-items:stretch}.side>.panel{text-align:center}.side .stat{justify-content:space-between}.side .wide{text-align:left}
+@media(max-width:780px){.progression-columns{grid-template-columns:1fr}.progression-talents .treegrid{grid-template-columns:1fr}.progression-combined{padding:10px}.progression-title{gap:8px}.progression-stats,.progression-talents{padding:10px}}
+.guide-task{accent-color:#b8d67a}
+
+/* TIC UI polish: tighter, more cohesive desktop layout */
+body{padding:12px;align-items:flex-start}
+main{width:min(1320px,100%)}
+header{align-items:center;margin-bottom:10px;gap:10px}
+h1{font-size:clamp(24px,3vw,34px)}
+.layout{grid-template-columns:minmax(0,1fr) 245px;gap:10px;align-items:start}
+.gamewrap{padding:5px;border-radius:5px;box-shadow:0 8px 28px #0007}
+.overlay{inset:5px;padding:16px}
+.side{gap:8px}
+.panel{padding:10px;border-radius:4px}
+.panel h3{margin-bottom:8px}
+.stat{margin:6px 0;font-size:11px}
+.inventory{gap:5px}
+.item{padding:6px;font-size:10px}
+.item b{font-size:15px;margin-top:2px}
+.log{min-height:42px;font-size:10px}
+.controls{font-size:10px;line-height:1.65}
+.progression-combined{margin:10px auto 0;padding:12px;border-radius:5px}
+.progression-title{gap:10px;padding-bottom:8px;margin-bottom:9px}
+.progression-columns{gap:10px;grid-template-columns:minmax(220px,.75fr) minmax(0,1.5fr)}
+.progression-stats,.progression-talents{padding:10px}
+.progression-talents .treegrid{gap:6px}
+.treenode{min-height:54px;padding:7px;font-size:10px}
+.treenode small{font-size:9px}
+.bottom{margin-top:8px}
+@media(min-width:1100px){.side{display:grid;grid-template-columns:1fr 1fr;align-items:start}.side>.panel{min-width:0}.side .wide{grid-column:1/-1}.side .controls{columns:2;column-gap:14px}.side .controls br{display:none}.side .controls .key{margin-right:3px}}
+@media(max-width:900px){body{padding:8px}.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.side .wide{grid-column:1/-1}.side .controls{columns:1}.progression-columns{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}}
+@media(max-width:600px){.side{grid-template-columns:1fr 1fr}.progression-columns{grid-template-columns:1fr}.progression-talents .treegrid{grid-template-columns:1fr 1fr}.progression-combined{padding:8px}.progression-stats,.progression-talents{padding:8px}.status{display:none}}
+
+</style></head>
+<body><main>
+<header><div><div class="eyebrow">SURVIVAL PROTOCOL // BUILD 3.1 // SAMLAD HUD</div><h1>KALLA <span>KVARTER</span></h1><div class="sub">En levande vildmark med täta barrskogar, mossiga gläntor, stenfält, blöta sänkor och övergivna fordon.</div></div><div class="status"><button id="openGuide" class="start" style="padding:8px 11px;font-size:11px">📖 100 UPPGIFTER</button><div class="pill">OMRÅDE <b id="zoneName">STARTLÄGRET</b></div><div class="pill">HOTNIVÅ <b id="threat">LÅG</b></div><div class="pill">NATT <b id="night">01</b></div></div></header>
+<div class="layout"><section><div class="gamewrap"><canvas id="game" width="800" height="560" tabindex="0" aria-label="Kalla kvarter spelplan"></canvas><div id="overlay" class="overlay"><div class="modal"><div class="eyebrow">SIGNAL FUNNEN // 04:17</div><h2 id="overlayTitle">UTFORSKA. UTRUSTA DIG. BESegra BOSSEN.</h2><p id="overlayText">En enorm skogsvärld väntar. Utforska 24 distrikt, följ långa grusvägar genom barrskog, myrar och stenmark, och leta efter övergivna stugor, vrak och gömda fynd. Basen och Roffe finns kvar — längst bort väntar signalstationen och Köttberget!</p><button id="start" class="start">[ STARTA SPELET ]</button><p style="font-size:11px">WASD / piltangenter · Följ skyltarna · E samla · automatisk strid</p></div></div></div>
+<div class="mobile"><button data-key="w">▲</button><button data-key="a">◀</button><button data-key="s">▼</button><button data-key="d">▶</button><button id="mobileAttack">SLÅ</button><button id="mobileLoot">SAMLA</button></div></section>
+<aside class="side">
+<div class="panel"><h3>ÖVERLEVARE</h3><div class="stat"><span>HÄLSA</span><strong id="hpText">100 / 100</strong></div><div class="bar red"><i id="hpBar"></i></div><div class="stat"><span>ORK</span><strong id="stamText">100%</strong></div><div class="bar"><i id="stamBar"></i></div><div class="stat"><span>ÖVERLEVT</span><strong id="time">00:00</strong></div><div class="stat"><span>DÖDADE</span><strong id="kills">0</strong></div></div>
+<div class="panel"><h3>RYGGSÄCK</h3><div class="inventory"><div class="item">SKROT<b id="scrap">0</b></div><div class="item">KRONOR<b id="cash">0 kr</b></div><div class="item">MAT<b id="food">0</b></div><div class="item">BINDOR<b id="med">0</b></div><div class="item">AMMUNITION<b id="ammo">0</b></div><div class="item" style="grid-column:1/-1;border-color:#65745c;color:#cbd8bb">VAPEN<b id="weaponText" style="font-size:14px;color:#d9e7c7">▰ FÄLTKNIV</b></div></div><button id="useMed" style="margin-top:9px;width:100%;padding:8px;background:#1d2a26;border:1px solid #526b56;color:#cfe8bd;cursor:pointer;font:inherit">ANVÄND BINDa (Q)</button></div>
+<div class="panel wide"><h3>FÄLTLOGG</h3><div class="log" id="log"><div>› Radio: ...hör någon mig?</div><div>› Hitta förnödenheter. Överlev.</div></div></div>
+<div class="panel wide"><h3>KONTROLLER</h3><div class="controls"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> rörelse<br><span class="key">E</span> plocka upp nära föremål<br><span class="key">F</span> sälj allt skrot hos handlaren (5 kr/st)<br><span class="key">KNIV</span> alltid utrustad från start<br><span class="key">AUTO</span> kniv nära fiender, pistol på avstånd<br><span class="key">GULD</span> pistol-loot · pistol ger 12 skott<br><span class="key">SPACE</span> manuell knivattack<br><span class="key">X</span> dodge · snabb undanmanöver<br><span class="key">V</span> parry · tajma före träff<br><span class="key">Q</span> använd bandage<br><span class="key">B</span> öppna basen nära gömstället<br><span class="key">C</span> crafting vid basens arbetsbänk (blueprints krävs)<br><span class="key">G</span> bygg en vägg framför dig (bygg-blueprint krävs, 5 skrot)<br><span class="key">SHIFT</span> spring (förbrukar ork)<br><span class="key">FARM</span> 24 sektorer · loot fylls på under rundan</div></div>
+</aside>
+<section class="panel progression-combined" id="progressionPanel">
+ <div class="progression-title"><h3>🎯 TALENTS &amp; SPEC — DIN KARAKTÄR, DINA VAL</h3><span class="points-pill" id="pointsCenter">POÄNG: 0</span></div>
+ <div class="stat"><span>NIVÅ</span><strong id="levelText">1 / 150</strong></div>
+ <div class="stat"><span>XP</span><strong id="xpText">0 XP</strong></div><div class="xpbar"><i id="xpBar"></i></div>
+ <p class="shopnote" style="text-align:center">Varje nivå ger 1 poäng. Fördela fritt mellan attribut och talents — ingen klass låser dina val.</p>
+ <div class="progression-columns">
+  <div class="progression-stats"><h3>ATTRIBUT</h3><div class="stat"><span>Styrka <b id="strengthText">0</b></span><span>Smidighet <b id="agilityText">0</b></span></div><div class="stat"><span>Vapen <b id="weaponStatText">0</b></span><span>Överlevnad <b id="survivalText">0</b></span></div>
+   <div class="statbtns"><button class="statbtn" data-stat="strength">+ STYRKA</button><button class="statbtn" data-stat="agility">+ SMIDIGHET</button><button class="statbtn" data-stat="weapon">+ VAPEN</button><button class="statbtn" data-stat="survival">+ ÖVERLEVNAD</button></div><p id="levelMessage" class="shopnote" aria-live="polite">Välj fritt hur du vill utvecklas.</p>
+  </div>
+  <div class="progression-talents"><h3>TALENTS (MAX 10 PER TALANG)</h3><div class="treegrid">
+   <button class="treenode" data-skill="health">❤️ HÄLSA <b id="healthSkillText">0/10</b><small> +15 maxhälsa per nivå</small></button>
+   <button class="treenode" data-skill="strength">⚔️ STYRKA <b id="strengthSkillText">0/10</b><small> +8% närstridsskada per nivå</small></button>
+   <button class="treenode" data-skill="dodge">💨 DODGE <b id="dodgeSkillText">0/10</b><small>Bättre undanmanöver</small></button>
+   <button class="treenode" data-skill="parry">🛡️ PARRY <b id="parrySkillText">0/10</b><small>Längre pareringsfönster</small></button>
+   <button class="treenode" data-skill="marksman">🎯 MARKSMAN <b id="marksmanSkillText">0/10</b><small>Skjutvapen-specialisering</small></button>
+   <button class="treenode" data-skill="tank">🧱 TANK <b id="tankSkillText">0/10</b><small>Tålig spelstil</small></button>
+   <button class="treenode" data-skill="kungers">🐻 KUNGERS <b id="kungersSkillText">0/10</b><small>Unik stridsinriktning</small></button>
+  </div><p id="skillMessage" class="shopnote" aria-live="polite">Välj en talent när du har poäng.</p></div>
+ </div>
+ <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px"><span class="points-pill" id="pointsText">POÄNG: 0</span><button id="respecBtn" class="shopclose">ÅTERFÖRDELA ALLA POÄNG · 20 SKROT</button></div><p id="respecMessage" class="shopnote" aria-live="polite">Du kan ändra din build när du vill mot en liten skrotkostnad.</p>
+</section></div><div class="bottom"><span>KALLA KVARTER © PROTOTYP — FIKTIVT SPEL · DIN BAS ÄR DITT HEM</span><span>FARMRUNDA: plundra sektorerna, hitta blueprints, samla material och tillverka utrustning med C.</span></div>
+</main>
+<div id="guide" class="shop hidden" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+ <div class="shopbox" style="width:min(850px,100%)">
+  <div class="shophead"><div><div class="eyebrow">ÖVERLEVARHANDBOK // NYBÖRJARGUIDE</div><h2 id="guideTitle">100 SMÅ UPPGIFTER</h2><p class="shopnote">Ta en sak i taget. Kryssa av uppgifterna själv när du klarat dem. Framstegen sparas i den här webbläsaren.</p></div><button id="closeGuide" class="shopclose">STÄNG ✕</button></div>
+  <div class="bar" style="margin:12px 0"><i id="guideBar" style="display:block;width:0;height:100%;background:#b8d67a"></i></div><div class="stat"><span>GUIDEFRAMSTEG</span><strong id="guideProgress">0 / 100 klara</strong></div>
+  <div id="guideTasks" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px"></div>
+  <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px"><button id="guideReset" class="shopclose">ÅTERSTÄLL CHECKLISTAN</button><span class="shopnote">Tips: börja uppifrån. Uppgifterna blir gradvis svårare.</span></div>
+ </div>
+</div>
+<div id="shop" class="shop hidden" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+  <div class="shopbox">
+    <div class="shophead"><div><div class="eyebrow">STARTLÄGRET // HANDEL</div><h2 id="shopTitle">ROFFES SKROTBOD</h2><p class="shopnote">”Jag köper skrot. Och säljer grejer som håller dig vid liv.”</p></div><button id="closeShop" class="shopclose">STÄNG ✕</button></div>
+    <div class="stat"><span>DINA PENGAR</span><strong id="shopCash">0 kr</strong></div>
+    <div class="shopgrid">
+      <div class="shopitem"><b>🔫 Sliten pistol</b><p>En pistol för automatisk strid på avstånd.</p><button data-buy="pistol">KÖP · 80 kr</button></div>
+      <div class="shopitem"><b>🟡 Ammunition ×12</b><p>Fyll på magasinet med tolv skott.</p><button data-buy="ammo">KÖP · 20 kr</button></div>
+      <div class="shopitem"><b>🩹 Bandage</b><p>Återställer hälsa när du använder Q.</p><button data-buy="med">KÖP · 25 kr</button></div>
+      <div class="shopitem"><b>🥫 Konservmat</b><p>Förnödenheter för dina rundor.</p><button data-buy="food">KÖP · 10 kr</button></div>
+      <div class="shopitem"><b>🦺 Skrotväst</b><p>Permanent rustning: minskar inkommande skada med 25%.</p><button data-buy="armor">KÖP · 120 kr</button></div>
+      <div class="shopitem"><b>⛑️ Förstärkt hjälm</b><p>Minskar inkommande skada ytterligare med 10%.</p><button data-buy="helmet">KÖP · 90 kr</button></div>
+    </div>
+    <div class="shopnote">SÄLJ SKROT: använd knappen nedan. Roffe betalar 5 kr per skrotdel. Utrustning och pengar sparas lokalt i den här webbläsaren när du klickar SPARA.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="sellScrapBtn" class="shopclose">SÄLJ ALLT SKROT</button><button id="saveGameBtn" class="shopclose">SPARA SPELET</button><button id="loadGameBtn" class="shopclose">LADDA SPARNING</button></div>
+    <p id="shopMessage" class="shopnote" aria-live="polite"></p>
+  </div>
+</div>
+<div id="craft" class="shop hidden" role="dialog" aria-modal="true" aria-labelledby="craftTitle">
+  <div class="shopbox">
+    <div class="shophead"><div><div class="eyebrow">FÄLTVÄRKSTAD // RITNINGAR</div><h2 id="craftTitle">CRAFTING — BYGG SJÄLV</h2><p class="shopnote">Du måste hitta rätt blueprint ute i världen innan du kan tillverka föremålet.</p></div><button id="closeCraft" class="shopclose">STÄNG ✕</button></div>
+    <div class="stat"><span>DITT MATERIAL</span><strong id="craftMaterials">0 skrot · 0 mat</strong></div>
+    <div class="shopgrid">
+      <div class="shopitem"><b>🟡 Ammunition ×12</b><p id="bpAmmoDesc">Blueprint krävs · Kostar 3 skrot.</p><button data-craft="ammo">TILLVERKA</button></div>
+      <div class="shopitem"><b>🩹 Bandage</b><p id="bpMedDesc">Blueprint krävs · Kostar 2 skrot.</p><button data-craft="med">TILLVERKA</button></div>
+      <div class="shopitem"><b>🦺 Skrotväst</b><p id="bpArmorDesc">Blueprint krävs · Kostar 12 skrot.</p><button data-craft="armor">TILLVERKA</button></div>
+      <div class="shopitem"><b>⛑️ Förstärkt hjälm</b><p id="bpHelmetDesc">Blueprint krävs · Kostar 9 skrot.</p><button data-craft="helmet">TILLVERKA</button></div>
+    </div>
+    <p id="craftMessage" class="shopnote" aria-live="polite">Ritningar är sällsynta. Leta bland loot i ruinerna.</p>
+  </div>
+</div>
+<div id="basePanel" class="shop hidden" role="dialog" aria-modal="true" aria-labelledby="baseTitle">
+  <div class="shopbox">
+    <div class="shophead"><div><div class="eyebrow">SÄKERT HÖRN // DITT GÖMSTÄLLE</div><h2 id="baseTitle">DIN BAS</h2><p class="shopnote">En rostig dörr, en varm lampa och en arbetsbänk. Här bygger du upp ditt liv efter världen gick under.</p></div><button id="closeBase" class="shopclose">STÄNG ✕</button></div>
+    <div class="stat"><span>FÖRVARING I BASEN</span><strong id="baseStorageText">0 skrot · 0 mat</strong></div>
+    <div class="shopgrid">
+      <div class="shopitem"><b>🔧 Arbetsbänk</b><p>Tillverka föremål med blueprints du hittat ute i världen.</p><button id="baseCraftBtn">ÖPPNA VERKSTAD · CRAFTING</button></div>
+      <div class="shopitem"><b>🏚️ Bygg ditt eget hus</b><p>Hitta ritningen Grundläggande byggteknik. När den är upplåst kan du bygga väggar nära dig med G. Varje vägg kostar 5 skrot.</p><button id="buildModeBtn">AKTIVERA BYGGLÄGE</button></div>
+      <div class="shopitem"><b>📦 Förvara skrot</b><p>Flytta allt skrot från ryggsäcken till basens förråd.</p><button id="stashScrapBtn">LÄGG UNDAN ALLT SKROT</button></div>
+      <div class="shopitem"><b>🧰 Hämta skrot</b><p>Ta tillbaka upp till 10 skrotdelar från förrådet.</p><button id="withdrawScrapBtn">HÄMTA 10 SKROT</button></div>
+      <div class="shopitem"><b>🥫 Förvara mat</b><p>Flytta all mat från ryggsäcken till basens förråd.</p><button id="stashFoodBtn">LÄGG UNDAN ALL MAT</button></div>
+      <div class="shopitem"><b>💾 Spara din bas</b><p>Spara ryggsäck, blueprints och allt som ligger i förrådet.</p><button id="baseSaveBtn">SPARA SPELET</button></div>
+      <div class="shopitem"><b>📂 Ladda sparning</b><p>Fortsätt från den senast sparade rundan.</p><button id="baseLoadBtn">LADDA SPARNING</button></div>
+    </div>
+    <p id="baseMessage" class="shopnote" aria-live="polite">Du är hemma. Ta hand om utrustningen innan nästa tur.</p>
+  </div>
+</div>
+<script>
+(()=>{
+const c=document.getElementById('game'),ctx=c.getContext('2d'),W=c.width,H=c.height,T=32;
+const $=id=>{let el=document.getElementById(id);if(!el){el=document.createElement('span');el.id=id;el.hidden=true;document.body.appendChild(el)}return el};
+let keys={},running=false,last=0,elapsed=0,spawn=0,attackCd=0,invuln=0,lootCd=0,day=1,logLines=[];
+const mapW=360,mapH=280;
+const sectorW=60,sectorH=70;
+const sectorNames=[
+ ["DJUPA NORDSKOGEN","GRANGLÄNTAN","GAMLA SKOGSVÄGEN","MOSSIGA MYREN","VINDKULLEN","RADARÅSEN"],
+ ["ÖDE SKOGSTUGOR","VÄSTRA SKOGEN","TALLBACKEN","SVARTA TJÄRNEN","SKROTGLÄNTAN","SIGNALSTIGEN"],
+ ["MYRMARKEN","STARTLÄGRET","JÄGARGLÄNTAN","ÖVERGIVEN STUGA","DJUPSKOGEN","SIGNALSTATIONEN"],
+ ["SÖDRA SKOGEN","FALLNA JÄTTAR","GRUSGROPEN","GAMLA BROFÄSTET","TÄTA SNÅREN","KÖTTBERGETS MARK"]
+];
+function zoneAt(x,y){let sx=Math.max(0,Math.min(5,Math.floor(x/(T*sectorW)))),sy=Math.max(0,Math.min(3,Math.floor(y/(T*sectorH))));return {x:sx,y:sy,name:sectorNames[sy][sx],danger:Math.min(5,1+Math.floor(sx/2)+Math.floor(sy/2))}}
+let player, enemies=[], loot=[], scenery=[], builtWalls=[], buildMode=false, inventory, kills, camera={x:0,y:0}, gameTime=0, bossSpawned=false, gunCd=0, worldStart={x:0,y:0}, merchant={x:0,y:0}, base={x:0,y:0}, baseStorage={scrap:0,food:0};
+let progression={level:1,xp:0,points:0,stats:{strength:0,agility:0,weapon:0,survival:0},skills:{health:0,dodge:0,parry:0,strength:0,marksman:0,tank:0,kungers:0}};
+let dodgeCd=0,parryWindow=0;
+const MAX_LEVEL=150;
+function xpNeeded(level){return Math.floor(100+level*level*8+level*25)}
+function maxHealth(){return 100+progression.stats.strength*8+(progression.skills?.health||0)*15}
+function spendSkill(skill){if(!progression.points){$('skillMessage').textContent='Inga poäng kvar! Få XP och levla upp.';return}progression.skills=Object.assign({health:0,dodge:0,parry:0,strength:0,marksman:0,tank:0,kungers:0},progression.skills||{});if(!(skill in progression.skills)||progression.skills[skill]>=10)return;progression.points--;progression.skills[skill]++;if(skill==='health')player.hp=Math.min(maxHealth(),player.hp+15);$('skillMessage').textContent=({strength:'Styrka uppgraderad: +8% närstridsskada per nivå.',health:'Hälsa uppgraderad: +15 maxhälsa.',dodge:'Dodge uppgraderad: bättre chans att undvika inkommande skada. Tryck X för undanmanöver.',parry:'Parry uppgraderad: längre pareringsfönster och starkare kontring. Tryck V precis före fiendens träff.'})[skill];log('Färdighet uppgraderad: '+skill.toUpperCase()+'!');updateUI()}
+function doDodge(){if(!running||dodgeCd>0)return;dodgeCd=1.15;invuln=Math.max(invuln,.38);let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0),m=Math.hypot(dx,dy)||1;player.x=Math.max(18,Math.min(mapW*T-18,player.x+(dx/m)*75));player.y=Math.max(18,Math.min(mapH*T-18,player.y+(dy/m)*75));player.stam=Math.max(0,player.stam-12);log('DODGE! Du kastar dig undan.')}
+function doParry(){if(!running||parryWindow>0)return;parryWindow=.42+(progression.skills?.parry||0)*.12;log('Parry redo — tajma fiendens attack!') }
+function addXP(amount,reason=''){if(progression.level>=MAX_LEVEL)return;progression.xp+=amount;let gained=0;while(progression.level<MAX_LEVEL&&progression.xp>=xpNeeded(progression.level)){progression.xp-=xpNeeded(progression.level);progression.level++;progression.points++;gained++;player.hp=Math.min(maxHealth(),player.hp+12);player.stam=100}if(progression.level>=MAX_LEVEL)progression.xp=0;if(gained)log('NIVÅ UPP! Nivå '+progression.level+' — +'+gained+' egenskapspoäng!');updateUI()}
+function spendPoint(stat){if(!progression.points){$('levelMessage').textContent='Du har inga lediga poäng. Besegra fiender och samla loot för XP.';return}if(!Object.prototype.hasOwnProperty.call(progression.stats,stat))return;progression.points--;progression.stats[stat]++;if(stat==='strength')player.hp=Math.min(maxHealth(),player.hp+8);$('levelMessage').textContent=({strength:'Styrka ökar maxhälsan med 8 per poäng.',agility:'Smidighet ökar rörelsehastigheten och orkåterhämtningen.',weapon:'Vapen ökar skadan från kniv och pistol.',survival:'Överlevnad ökar räckvidden för loot och XP från fynd.'})[stat];log('Egenskap uppgraderad: '+({strength:'Styrka',agility:'Smidighet',weapon:'Vapen',survival:'Överlevnad'})[stat]+'.');updateUI()}
+function respecBuild(){if(inventory.scrap<20){$('respecMessage').textContent='Du behöver 20 skrot för att återfördela poängen. Du har '+inventory.scrap+'.';return}let spent=Object.values(progression.stats||{}).reduce((a,b)=>a+(Number(b)||0),0)+Object.values(progression.skills||{}).reduce((a,b)=>a+(Number(b)||0),0);if(!spent){$('respecMessage').textContent='Du har inte spenderat några poäng ännu.';return}inventory.scrap-=20;progression.points+=spent;progression.stats={strength:0,agility:0,weapon:0,survival:0};progression.skills={health:0,dodge:0,parry:0,strength:0,marksman:0,tank:0,kungers:0};player.hp=Math.min(player.hp,maxHealth());$('respecMessage').textContent='Klart! '+spent+' poäng återställdes. Fördela dem på nytt.';log('Karaktär ombyggd: '+spent+' poäng återfördelade för 20 skrot.');updateUI()}
+const bossPoint={x:mapW*T*.74,y:mapH*T*.5};
+const rand=(a,b)=>Math.random()*(b-a)+a, pick=a=>a[Math.floor(Math.random()*a.length)], dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+// Ett inhägnat tryggt område runt Roffe och spelarens bas. Zombier hålls utanför; spelaren använder grinden.
+function safeYard(){return {left:base.x-105,right:merchant.x+105,top:worldStart.y-70,bottom:base.y+100,gateX:worldStart.x,gateHalf:42}}
+function insideYard(p){const r=safeYard();return p.x>r.left&&p.x<r.right&&p.y>r.top&&p.y<r.bottom}
+function crossesGate(a,b){const r=safeYard();return Math.min(a.x,b.x)<r.gateX+r.gateHalf&&Math.max(a.x,b.x)>r.gateX-r.gateHalf&&((a.y<=r.bottom&&b.y>=r.bottom)||(a.y>=r.bottom&&b.y<=r.bottom))}
+const blueprintNames={ammo:'Ammunition',med:'Bandage',armor:'Skrotväst',helmet:'Förstärkt hjälm',building:'Grundläggande byggteknik'};
+const craftCosts={ammo:3,med:2,armor:12,helmet:9};
+function log(s){logLines.unshift('› '+s);logLines=logLines.slice(0,4);$('log').innerHTML=logLines.map(x=>'<div>'+x+'</div>').join('')}
+function reset(){builtWalls=[];buildMode=false;progression={level:1,xp:0,points:0,stats:{strength:0,agility:0,weapon:0,survival:0},skills:{health:0,dodge:0,parry:0,strength:0,marksman:0,tank:0,kungers:0}};worldStart={x:(sectorW+sectorW/2)*T,y:(sectorH*2+sectorH/2)*T};player={x:worldStart.x,y:worldStart.y,hp:100,stam:100,faceX:1,faceY:0,weapon:'knife'};merchant={x:worldStart.x+88,y:worldStart.y+24};base={x:worldStart.x-128,y:worldStart.y+100};baseStorage={scrap:0,food:0};enemies=[];loot=[];scenery=[];inventory={scrap:0,food:0,med:0,ammo:0,cash:0,armor:0,helmet:0,blueprints:{ammo:false,med:false,armor:false,helmet:false,building:false}};kills=0;elapsed=0;gameTime=0;spawn=0;attackCd=0;gunCd=0;invuln=0;lootCd=0;day=1;bossSpawned=false;logLines=[];log('Du vaknar vid skogslägret. Handlaren Roffe finns längs grusvägen.');log('Roffes butik: gå nära och tryck F. Sälj skrot och köp utrustning.');log('Ditt gömställe och Roffe ligger bakom ett tryggt staket. Gå genom grinden. Inne på basgården är du helt säker och kan inte dö.');log('Zombier kan inte ta sig in i den inhägnade zonen.');log('Enorm skogskarta: 360 × 280 rutor, 24 jättedistrikt, detaljerad skogsgrafik, långa grusvägar och gömda platser. Leta efter blueprints.');log('Loot återkommer under rundan. Ju djupare in i skogen, desto farligare zoner.');generateWorld();for(let i=0;i<10;i++)spawnEnemy(i===0?'mutant':undefined);for(let i=0;i<170;i++)spawnLoot();loot.push({...freeSpot(),type:'pistol',bob:0});updateUI()}
+function generateWorld(){
+ // Skogskarta: träd i täta klungor, med gläntor runt lägret, Roffe och basen.
+ for(let i=0;i<6500;i++){
+  let x=rand(35,mapW*T-35),y=rand(35,mapH*T-35);
+  const nearCamp=Math.hypot(x-worldStart.x,y-worldStart.y)<230;
+  const nearRoad=Math.abs(y-(worldStart.y+(x-worldStart.x)*.18))<100 && x>worldStart.x-100 && x<bossPoint.x+260;
+  if(nearCamp && Math.random()<.88) continue;
+  if(nearRoad && Math.random()<.72) continue;
+  scenery.push({x,y,w:rand(18,34),h:rand(22,40),type:pick(['tree','tree','pine','pine','stump','rock','weed','fern','bush','log','flowers','mushroom','deadpine','moss'])});
+ }
+ // Små utforskningsplatser längs skogsvägarna.
+ for(let i=0;i<70;i++){
+  let x=rand(160,mapW*T-160),y=rand(140,mapH*T-140);
+  if(Math.hypot(x-worldStart.x,y-worldStart.y)>260)scenery.push({x,y,w:rand(44,76),h:rand(38,65),type:pick(['cabin','wreck','barricade','rubble'])});
+ }
+ // Fasta landmärken nära sidovägarna: små övergivna bilar och skogsvrak.
+ const landmarks=[
+  {x:worldStart.x+535,y:worldStart.y-145,type:'car',w:58,h:32},
+  {x:worldStart.x+970,y:worldStart.y+125,type:'wreck',w:62,h:36},
+  {x:bossPoint.x-145,y:bossPoint.y+85,type:'car',w:56,h:31},
+  {x:worldStart.x-245,y:worldStart.y+265,type:'wreck',w:60,h:35}
+ ];
+ for(const p of landmarks)scenery.push({...p});
+}
+function freeSpot(){let x=rand(45,mapW*T-45),y=rand(45,mapH*T-45);return{x,y}}
+function spawnEnemy(type){let p;for(let tries=0;tries<80;tries++){let a=rand(0,Math.PI*2),r=rand(320,780);p={x:Math.max(45,Math.min(mapW*T-45,player.x+Math.cos(a)*r)),y:Math.max(45,Math.min(mapH*T-45,player.y+Math.sin(a)*r))};if(dist(p,player)>260&&!insideYard(p))break}if(insideYard(p)){const r=safeYard();p.x=r.right+45;p.y=Math.max(45,Math.min(mapH*T-45,p.y))}let z=zoneAt(p.x,p.y),mutant=type==='mutant'||Math.random()<Math.min(.12+z.danger*.08+elapsed/350,.72),hp=mutant?65+z.danger*8:38+z.danger*5;enemies.push({x:p.x,y:p.y,type:mutant?'mutant':'zombie',hp,speed:(mutant?47:27)+z.danger*2,damage:(mutant?16:8)+Math.floor(z.danger*1.5),attack:0,phase:rand(0,6.2),maxHp:hp})}
+function spawnBoss(){if(bossSpawned)return;bossSpawned=true;let x=Math.min(mapW*T-100,bossPoint.x+230),y=bossPoint.y;enemies.push({x,y,type:'boss',hp:900,maxHp:900,speed:34,damage:24,attack:0,phase:0});log('BOSSIGNAL! KÖTTBERGET har vaknat vid signalstationen. Förbered dig!');}
+function spawnLoot(){let p;for(let tries=0;tries<60;tries++){p={x:Math.max(45,Math.min(mapW*T-45,player.x+rand(-900,900))),y:Math.max(45,Math.min(mapH*T-45,player.y+rand(-700,700)))};if(dist(p,player)>75)break}let z=zoneAt(p.x,p.y),roll=Math.random(),type=roll<.48?'scrap':roll<.62?'ammo':roll<.76?'food':roll<.9?'med':'scrap';if(roll<.035){let known=inventory.blueprints||{};let missing=['ammo','med','armor','helmet','building'].filter(k=>!known[k]);if(missing.length)type='bp_'+pick(missing)}if(z.danger>=4&&Math.random()<.18&&type[0]!=='b')type='ammo';loot.push({...p,type,bob:rand(0,6)})}
+function worldPos(x,y){return{x:Math.floor(x/T),y:Math.floor(y/T)}}
+function bossReward(e){
+ // Köttberget lämnar alltid en tydlig belöning som måste plockas upp.
+ loot.push({x:e.x+24,y:e.y+8,type:'signal_core',bob:0},{x:e.x-24,y:e.y+10,type:'scrap',bob:0},{x:e.x+8,y:e.y-28,type:'ammo',bob:0},{x:e.x-8,y:e.y-28,type:'med',bob:0});
+ const missing=['armor','helmet','building','ammo','med'].filter(k=>!inventory.blueprints[k]);
+ if(missing.length)loot.push({x:e.x,y:e.y+38,type:'bp_'+pick(missing),bob:0});
+ log('KÖTTBERGETS BYTE ligger kvar på marken! Plocka upp kärnan, skrotet och ritningen.');
+}
+function attack(){if(!running||attackCd>0)return;attackCd=.42;player.stam=Math.max(0,player.stam-4);let hit=enemies.filter(e=>dist(e,player)<52 && ((e.x-player.x)*player.faceX+(e.y-player.y)*player.faceY)>-12);if(!hit.length){log('Du slår ut i mörkret.');return}hit.sort((a,b)=>dist(a,player)-dist(b,player));let e=hit[0];e.hp-=(e.type==='boss'?38:e.type==='mutant'?32:46)*(1+progression.stats.weapon*.06+(progression.skills?.strength||0)*.08+(progression.skills?.kungers||0)*.08);log(e.type==='boss'?'Kniven träffar Köttberget!':'Knivträff! Fienden stapplar bakåt.');if(e.hp<=0){enemies=enemies.filter(a=>a!==e);kills++;addXP(e.type==='boss'?500:e.type==='mutant'?45:25,'fiende');inventory.scrap+=Math.random()<.6?1:0;if(Math.random()<.18)inventory.food++;if(e.type==='boss'){inventory.ammo+=30;player.hp=Math.min(maxHealth(),player.hp+40);bossReward(e);log('BOSS NEDGJORD! +30 ammunition och +40 hälsa!')}else log('Fiende nedgjord. Plocka upp allt användbart.');}}
+function collect(){if(!running||lootCd>0)return;lootCd=.22;let item=loot.filter(l=>dist(l,player)<48+progression.stats.survival*8).sort((a,b)=>dist(a,player)-dist(b,player))[0];if(!item){log('Inget att plocka upp här.');return}loot=loot.filter(l=>l!==item);addXP(2+progression.stats.survival,'loot');if(item.type.startsWith('bp_'))addXP(15+progression.stats.survival*2,'ritning');if(item.type==='signal_core')addXP(100,'bossbyte');if(item.type==='pistol'){player.weapon='pistol';inventory.ammo+=12;log('PISTOL HITTAD! Du har 12 skott och skjuter automatiskt mot fiender i närheten.')}else if(item.type==='signal_core'){inventory.scrap+=20;inventory.cash+=100;inventory.ammo+=15;player.hp=Math.min(maxHealth(),player.hp+25);log('SIGNALKÄRNA SÄKRAD! +20 skrot, +100 kr, +15 ammo och +25 hälsa. Roffe kommer vilja köpa fler!')}else if(item.type.startsWith('bp_')){let key=item.type.slice(3);if(!inventory.blueprints)inventory.blueprints={};if(inventory.blueprints[key]){inventory.scrap+=3;log('Dubbel blueprint: bytte den mot 3 skrot.')}else{inventory.blueprints[key]=true;log('BLUEPRINT HITTAD: '+blueprintNames[key]+'! '+(key==='building'?'Öppna B vid basen för att låsa upp byggläget.':'Tryck C för att tillverka.'))}}else inventory[item.type]++;log(({scrap:'Skrot bärgat.',food:'Konservburk hittad.',med:'Bandage hittat.',ammo:'Ammunition hittad.'})[item.type]||'Vapen eller ritning säkrad.');updateUI();updateCraft()}
+function sellScrap(){
+ if(!running)return;
+ if(inventory.scrap<=0){$('shopMessage').textContent='Roffe: Inget skrot att sälja, kompis.';log('Roffe: Kom tillbaka när du har skrot, kompis.');return}
+ let amount=inventory.scrap,earned=amount*5;inventory.scrap=0;inventory.cash+=earned;
+ $('shopMessage').textContent='Sålt '+amount+' skrot för '+earned+' kr.';log('Roffe köper '+amount+' skrot för '+earned+' kr. Tack för affären!');updateUI();updateShop()
+}
+function openShop(){if(!running)return;if(dist(player,merchant)>95){log('Roffe är inte nära. Leta efter handlaren vid startlägret.');return}$('shop').classList.remove('hidden');$('shopMessage').textContent='Välkommen! Pengar: '+inventory.cash+' kr.';updateShop()}
+function closeShop(){$('shop').classList.add('hidden');c.focus()}
+function updateShop(){$('shopCash').textContent=inventory.cash+' kr';document.querySelectorAll('[data-buy]').forEach(b=>{const item=b.dataset.buy,prices={pistol:80,ammo:20,med:25,food:10,armor:120,helmet:90};b.disabled=inventory.cash<prices[item]||((item==='armor'&&inventory.armor)||(item==='helmet'&&inventory.helmet));b.style.opacity=b.disabled?'.45':'1';b.title=b.disabled?(inventory.cash<prices[item]?'Du har inte råd.':'Redan utrustad.'):'Köp för '+prices[item]+' kr'})}
+function buyItem(item){
+ const prices={pistol:80,ammo:20,med:25,food:10,armor:120,helmet:90},price=prices[item];
+ if(!price)return;
+ if(inventory.cash<price){$('shopMessage').textContent='Du har inte råd med det där.';return}
+ if(item==='armor'&&inventory.armor){$('shopMessage').textContent='Du har redan en skrotväst.';return}
+ if(item==='helmet'&&inventory.helmet){$('shopMessage').textContent='Du har redan en hjälm.';return}
+ inventory.cash-=price;
+ if(item==='pistol'){player.weapon='pistol';inventory.ammo+=12;$('shopMessage').textContent='Pistol köpt! +12 skott.'}
+ if(item==='ammo'){inventory.ammo+=12;$('shopMessage').textContent='Ammunition köpt! +12 skott.'}
+ if(item==='med'){inventory.med++;$('shopMessage').textContent='Bandage köpt.'}
+ if(item==='food'){inventory.food++;$('shopMessage').textContent='Konservmat köpt.'}
+ if(item==='armor'){inventory.armor=1;$('shopMessage').textContent='Skrotväst utrustad! 25% skadereduktion.'}
+ if(item==='helmet'){inventory.helmet=1;$('shopMessage').textContent='Hjälm utrustad! Ytterligare 10% skadereduktion.'}
+ log('Roffe: Affär klar. Tack för kronorna!');updateUI();updateShop()
+}
+function saveGame(){
+ try{const data={player:{x:player.x,y:player.y,hp:player.hp,stam:player.stam,weapon:player.weapon},inventory,baseStorage,builtWalls,kills,elapsed,day,progression};localStorage.setItem('kallaKvarterSave12',JSON.stringify(data));$('shopMessage').textContent='Sparat i den här webbläsaren!';if(!$('basePanel').classList.contains('hidden'))$('baseMessage').textContent='Spelet och basförrådet är sparade!';log('Spel sparat lokalt.')}
+ catch(e){$('shopMessage').textContent='Kunde inte spara i den här webbläsaren.'}
+}
+function loadGame(){
+ try{const raw=localStorage.getItem('kallaKvarterSave12')||localStorage.getItem('kallaKvarterSave10');if(!raw){$('shopMessage').textContent='Ingen sparning hittades.';return}const d=JSON.parse(raw);player.x=d.player.x;player.y=d.player.y;player.hp=d.player.hp;player.stam=d.player.stam;player.weapon=d.player.weapon;progression=Object.assign({level:1,xp:0,points:0,stats:{strength:0,agility:0,weapon:0,survival:0}},d.progression||{});progression.stats=Object.assign({strength:0,agility:0,weapon:0,survival:0},(d.progression||{}).stats||{});progression.skills=Object.assign({health:0,dodge:0,parry:0},(d.progression||{}).skills||{});inventory=Object.assign({scrap:0,food:0,med:0,ammo:0,cash:0,armor:0,helmet:0,blueprints:{ammo:false,med:false,armor:false,helmet:false,building:false}},d.inventory);inventory.blueprints=Object.assign({ammo:false,med:false,armor:false,helmet:false,building:false},d.inventory.blueprints||{});baseStorage=Object.assign({scrap:0,food:0},d.baseStorage||{});builtWalls=Array.isArray(d.builtWalls)?d.builtWalls:[];kills=d.kills||0;elapsed=d.elapsed||0;day=d.day||1;log('Sparning laddad. Fortsätt din farmrunda!');$('shopMessage').textContent='Sparning laddad.';updateUI();updateShop()}
+ catch(e){$('shopMessage').textContent='Sparningen kunde inte läsas.'}
+}
+function openBase(){if(!running)return;if(dist(player,base)>110){log('Ditt gömställe är inte nära. Leta efter BAS-symbolen vid startlägret.');return}$('basePanel').classList.remove('hidden');$('baseMessage').textContent='Välkommen hem. Här kan du förvara material och använda arbetsbänken.';updateBase()}
+function closeBase(){$('basePanel').classList.add('hidden');c.focus()}
+function updateBase(){$('baseStorageText').textContent=baseStorage.scrap+' skrot · '+baseStorage.food+' mat';$('stashScrapBtn').disabled=inventory.scrap<=0;$('stashFoodBtn').disabled=inventory.food<=0;$('withdrawScrapBtn').disabled=baseStorage.scrap<=0;['stashScrapBtn','stashFoodBtn','withdrawScrapBtn'].forEach(id=>{$(id).style.opacity=$(id).disabled?'.45':'1'})}
+function toggleBuildMode(){if(!inventory.blueprints||!inventory.blueprints.building){$('baseMessage').textContent='Du saknar ritningen Grundläggande byggteknik. Leta efter en blåskimrande blueprint ute i ruinerna.';return}buildMode=!buildMode;$('baseMessage').textContent=buildMode?'BYGGLÄGE AKTIVT: stäng menyn, gå till platsen och tryck G för att placera en vägg framför dig. Varje vägg kostar 5 skrot.':'Byggläget är avstängt.';log(buildMode?'Byggläge aktiverat. Tryck G för att placera en vägg.':'Byggläge avstängt.')}
+function buildWall(){if(!running)return;if(!inventory.blueprints||!inventory.blueprints.building){log('Du behöver blueprinten Grundläggande byggteknik innan du kan bygga.');return}if(!buildMode){log('Gå till basen, öppna B och aktivera byggläget först.');return}if(dist(player,base)>520){log('Byggläget fungerar bara nära din bas. Ta dig hem och bygg där!');return}if(inventory.scrap<5){log('En vägg kostar 5 skrot. Samla mer skrot!');return}let x=Math.round((player.x+player.faceX*42)/24)*24,y=Math.round((player.y+player.faceY*42)/24)*24;if(dist({x,y},base)<72||dist({x,y},merchant)<55){log('Lämna lite plats runt basen och Roffe.');return}if(builtWalls.some(w=>Math.hypot(w.x-x,w.y-y)<22)){log('Det står redan en byggdel där.');return}builtWalls.push({x,y});inventory.scrap-=5;log('Vägg byggd! −5 skrot. Tryck G igen för fler väggar.');updateUI();updateBase();updateCraft()}
+function stashScrap(){if(inventory.scrap<=0){$('baseMessage').textContent='Du har inget skrot att lägga undan.';return}let n=inventory.scrap;baseStorage.scrap+=n;inventory.scrap=0;$('baseMessage').textContent='Du lade '+n+' skrot i förrådet. Det ligger säkert här.';log('Basförråd: '+n+' skrot undanlagt.');updateUI();updateBase();updateCraft()}
+function withdrawScrap(){let n=Math.min(10,baseStorage.scrap);if(n<=0){$('baseMessage').textContent='Förrådet är tomt på skrot.';return}baseStorage.scrap-=n;inventory.scrap+=n;$('baseMessage').textContent='Du hämtade '+n+' skrot från förrådet.';log('Hämtade '+n+' skrot från basen.');updateUI();updateBase();updateCraft()}
+function stashFood(){if(inventory.food<=0){$('baseMessage').textContent='Du har ingen mat att lägga undan.';return}let n=inventory.food;baseStorage.food+=n;inventory.food=0;$('baseMessage').textContent='Du lade '+n+' mat i förrådet.';log('Basförråd: '+n+' mat undanlagd.');updateUI();updateBase()}
+function openCraft(){if(!running)return;if(dist(player,base)>105){log('Arbetsbänken finns i ditt gömställe. Gå till basen och tryck B.');return}$('basePanel').classList.add('hidden');$('craft').classList.remove('hidden');$('craftMessage').textContent='Du arbetar vid basens arbetsbänk. Ritningar krävs för varje recept.';updateCraft()}
+function closeCraft(){$('craft').classList.add('hidden');c.focus()}
+function updateCraft(){if(!inventory||!inventory.blueprints)return;$('craftMaterials').textContent=inventory.scrap+' skrot · '+inventory.food+' mat';document.querySelectorAll('[data-craft]').forEach(b=>{let k=b.dataset.craft,known=!!inventory.blueprints[k],owned=(k==='armor'&&inventory.armor)||(k==='helmet'&&inventory.helmet),ok=known&&inventory.scrap>=craftCosts[k]&&!owned;b.disabled=!ok;b.style.opacity=ok?'1':'.45';b.textContent=!known?'BLUEPRINT SAKNAS':owned?'REDAN TILLVERKAD':'TILLVERKA · '+craftCosts[k]+' SKROT';let el=$('bp'+k[0].toUpperCase()+k.slice(1)+'Desc');if(el)el.textContent=(known?'Blueprint upplåst':'Hitta blueprint först')+' · Kostar '+craftCosts[k]+' skrot.'})}
+function craftItem(item){if(!inventory.blueprints||!inventory.blueprints[item]){$('craftMessage').textContent='Du saknar blueprint för '+blueprintNames[item]+'. Leta efter en glödande ritning ute i världen.';return}if(inventory.scrap<craftCosts[item]){$('craftMessage').textContent='För lite skrot. Behöver '+craftCosts[item]+' skrot.';return}if((item==='armor'&&inventory.armor)||(item==='helmet'&&inventory.helmet)){$('craftMessage').textContent='Du har redan den utrustningen.';return}inventory.scrap-=craftCosts[item];if(item==='ammo')inventory.ammo+=12;if(item==='med')inventory.med++;if(item==='armor')inventory.armor=1;if(item==='helmet')inventory.helmet=1;$('craftMessage').textContent='Klart! '+blueprintNames[item]+' tillverkad.';log('Tillverkade: '+blueprintNames[item]+'.');updateUI();updateCraft()}
+function useMed(){if(inventory.med>0&&player.hp<100){inventory.med--;player.hp=Math.min(maxHealth(),player.hp+38);log('Du lindar såret. +38 hälsa.');updateUI()}else log(inventory.med?'Du behöver inte bandage just nu.':'Inga bandage kvar.')}
+function update(dt){if(!running)return;elapsed+=dt;gameTime+=dt;attackCd=Math.max(0,attackCd-dt);gunCd=Math.max(0,gunCd-dt);invuln=Math.max(0,invuln-dt);dodgeCd=Math.max(0,dodgeCd-dt);parryWindow=Math.max(0,parryWindow-dt);lootCd=Math.max(0,lootCd-dt);
+ let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0),mag=Math.hypot(dx,dy)||1;dx/=mag;dy/=mag;
+ let oldPlayerPos={x:player.x,y:player.y};let sprint=(keys.Shift&&player.stam>1&&!!(dx||dy));let speed=(sprint?190:125)*(1+progression.stats.agility*.025);if(sprint)player.stam=Math.max(0,player.stam-24*dt);else player.stam=Math.min(100,player.stam+(12+progression.stats.agility*.7)*dt);
+ if(dx||dy){player.x=Math.max(18,Math.min(mapW*T-18,player.x+dx*speed*dt));player.y=Math.max(18,Math.min(mapH*T-18,player.y+dy*speed*dt));player.faceX=dx;player.faceY=dy}
+ // Staketet stoppar spelaren överallt utom vid grinden.
+ if(insideYard(player)!==insideYard(oldPlayerPos)&&!crossesGate(oldPlayerPos,player)){player.x=oldPlayerPos.x;player.y=oldPlayerPos.y}
+ // Automatisk strid: pistol på avstånd, kniv när fienden kommer nära.
+ let target=enemies.filter(e=>dist(e,player)<(player.weapon==='pistol'?250:50)).sort((a,b)=>dist(a,player)-dist(b,player))[0];
+ if(target){let tx=target.x-player.x,ty=target.y-player.y,td=Math.hypot(tx,ty)||1;player.faceX=tx/td;player.faceY=ty/td;if(player.weapon==='pistol'&&inventory.ammo>0&&gunCd<=0){gunCd=.32;inventory.ammo--;target.hp-=(target.type==='boss'?55:45)*(1+progression.stats.weapon*.06);log('PANG! Träff — ammunition kvar: '+inventory.ammo);if(target.hp<=0){enemies=enemies.filter(a=>a!==target);kills++;addXP(target.type==='boss'?500:target.type==='mutant'?45:25,'fiende');if(target.type==='boss'){inventory.ammo+=30;player.hp=Math.min(maxHealth(),player.hp+40);bossReward(target);log('BOSS NEDGJORD! Belöning: ammunition och hälsa.')}else {inventory.scrap++;log('Fiende nedgjord.')} }updateUI()}else if(player.weapon==='knife'&&dist(target,player)<50&&attackCd<=0)attack()}
+ if(!bossSpawned&&dist(player,bossPoint)<95)spawnBoss();
+ // collisions with solid ruin blocks
+ for(const s of scenery){if(!['building','car','wreck','barricade'].includes(s.type))continue;let px=player.x,py=player.y;if(px>s.x-14&&px<s.x+s.w+14&&py>s.y-14&&py<s.y+s.h+14){player.x-=dx*speed*dt;player.y-=dy*speed*dt;break}}
+ for(const w of builtWalls){if(player.x>w.x-16&&player.x<w.x+16&&player.y>w.y-16&&player.y<w.y+16){player.x=oldPlayerPos.x;player.y=oldPlayerPos.y;break}}
+ spawn+=dt;if(spawn>Math.max(3.5,8-elapsed*.025)&&enemies.length<19&&!enemies.some(e=>e.type==='boss')){spawn=0;spawnEnemy()}
+ for(const e of enemies){e.phase+=dt*4;e.attack-=dt;let d=dist(e,player);
+  // BASENS TRYGGZON: fiender får inte skada spelaren inne på gården.
+  if(insideYard(player)){ if(insideYard(e)){const r=safeYard();e.x=r.right+55;e.y=Math.max(r.top,Math.min(r.bottom,e.y));} continue; }if(d>(e.type==='boss'?42:24)){let ex=(player.x-e.x)/(d||1),ey=(player.y-e.y)/(d||1),next={x:e.x+ex*e.speed*dt,y:e.y+ey*e.speed*dt};if(!(insideYard(next)&&!insideYard(e))){e.x=next.x;e.y=next.y}}
+  if(d<27&&e.attack<=0){e.attack=e.type==='boss'?.85:e.type==='mutant'?1.0:1.25;if(parryWindow>0){parryWindow=0;e.hp-=(12+(progression.skills?.parry||0)*10)*(1+(progression.skills?.kungers||0)*.08);log('PERFEKT PARRY! Fiendens attack stoppad — kontring!');if(e.hp<=0){enemies=enemies.filter(a=>a!==e);kills++;addXP(e.type==='boss'?500:e.type==='mutant'?45:25,'fiende');log('Fienden föll efter din kontring!')}}else if(invuln<=0){let dodgeChance=Math.min(.4,(progression.skills?.dodge||0)*.08);if(Math.random()<dodgeChance){log('DODGE! Du undvek attacken!')}else{let reduction=(inventory.armor?.25:0)+(inventory.helmet?.10:0)+(progression.skills?.tank||0)*.04;player.hp-=e.damage*(1-Math.min(.65,reduction));log(e.type==='boss'?'KÖTTBERGET slår dig med en enorm näve!':e.type==='mutant'?'Mutanten river dig!':'En zombie biter dig!');if(player.hp<=0){player.hp=0;endGame(false)}}invuln=.65}}
+ }
+ for(const l of loot)l.bob+=dt*3;
+ if(Math.floor(elapsed/75)+1>day){day=Math.floor(elapsed/75)+1;log('NATT '+String(day).padStart(2,'0')+' — fler rörelser i mörkret...');}
+ if(Math.floor(elapsed/18)>Math.floor((elapsed-dt)/18) && !insideYard(player)){player.hp=Math.max(0,player.hp-.6);if(player.hp<=0)endGame(false)}
+ if(loot.length<110&&Math.random()<dt*.8)spawnLoot();
+ if(elapsed>=240&&bossSpawned&&enemies.every(e=>e.type!=='boss')){endGame(true)}else if(elapsed>=420&&!bossSpawned){endGame(true)}
+ updateUI()
+}
+function updateUI(){ $('hpText').textContent=Math.ceil(player.hp)+' / '+maxHealth();$('hpBar').style.width=(player.hp/maxHealth()*100)+'%';$('stamText').textContent=Math.ceil(player.stam)+'%';$('stamBar').style.width=player.stam+'%';$('weaponText').textContent=(player.weapon==='pistol'?'▰ PISTOL':'▰ FÄLTKNIV')+(inventory.armor?' · VÄST':'')+(inventory.helmet?' · HJÄLM':'');$('scrap').textContent=inventory.scrap;$('cash').textContent=inventory.cash+' kr';$('food').textContent=inventory.food;$('med').textContent=inventory.med;$('ammo').textContent=inventory.ammo+ (player.weapon==='pistol'?' · PISTOL':'');$('kills').textContent=kills;$('time').textContent=fmt(elapsed);$('levelText').textContent=progression.level+' / '+MAX_LEVEL;$('xpText').textContent=progression.level>=MAX_LEVEL?'MAXLEVEL NÅDD':progression.xp+' / '+xpNeeded(progression.level)+' XP';$('xpBar').style.width=(progression.level>=MAX_LEVEL?100:progression.xp/xpNeeded(progression.level)*100)+'%';$('pointsText').textContent='POÄNG: '+progression.points;if($('pointsCenter'))$('pointsCenter').textContent='POÄNG: '+progression.points;$('strengthText').textContent=progression.stats.strength;$('agilityText').textContent=progression.stats.agility;$('weaponStatText').textContent=progression.stats.weapon;$('survivalText').textContent=progression.stats.survival;progression.skills=Object.assign({health:0,dodge:0,parry:0,strength:0,marksman:0,tank:0,kungers:0},progression.skills||{});$('healthSkillText').textContent=progression.skills.health+'/10';$('strengthSkillText').textContent=progression.skills.strength+'/10';$('dodgeSkillText').textContent=progression.skills.dodge+'/10';$('parrySkillText').textContent=progression.skills.parry+'/10';$('marksmanSkillText').textContent=progression.skills.marksman+'/10';$('tankSkillText').textContent=progression.skills.tank+'/10';$('kungersSkillText').textContent=progression.skills.kungers+'/10';document.querySelectorAll('[data-skill]').forEach(b=>b.disabled=progression.points<=0||progression.skills[b.dataset.skill]>=10||progression.level>=MAX_LEVEL);document.querySelectorAll('[data-stat]').forEach(b=>b.disabled=progression.points<=0||progression.level>=MAX_LEVEL);$('night').textContent=String(day).padStart(2,'0');$('threat').textContent=enemies.length>10?'EXTREM':enemies.length>6?'HÖG':'LÅG';let z=zoneAt(player.x,player.y);$('zoneName').textContent=z.name}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0')}
+function endGame(win){if(!running)return;running=false;$('overlay').classList.remove('hidden');$('overlayTitle').textContent=win?'GRYNING':'DU FÖLL I MÖRKRET';$('overlayText').textContent=win?'Du höll ut i sju minuter. Staden är fortfarande farlig — men du lever. Döda fiender: '+kills+'.':'Överlevnadstid: '+fmt(elapsed)+'. Fiender nedgjorda: '+kills+'. Du kan försöka igen.';$('start').textContent='[ SPELA IGEN ]'}
+function draw(){
+ let sx=player.x-W/2,sy=player.y-H/2;camera={x:sx,y:sy};ctx.clearRect(0,0,W,H);
+ // Skogsmark: varierad jord, mossöar, barr, löv och små stenar med stabila mönster.
+ for(let y=Math.floor(sy/T);y<Math.ceil((sy+H)/T)+1;y++)for(let x=Math.floor(sx/T);x<Math.ceil((sx+W)/T)+1;x++){
+  let px=x*T-sx,py=y*T-sy,seed=Math.abs((x*73856093)^(y*19349663));
+  const zone=zoneAt((x+.5)*T,(y+.5)*T),sxZone=zone.x,syZone=zone.y;
+  // Fyra tydliga naturbiomer: mörk barrskog, ljus glänta, stenmark och blöt sänka.
+  const swamp=(sxZone===4&&syZone>=2),rockland=(sxZone<=1&&syZone===3),deepPine=(sxZone>=4&&syZone<=1),clearing=(sxZone===2&&syZone===1);
+  const ground=swamp?['#3d594b','#456251','#3a5147','#4a6250']:rockland?['#656b5c','#727568','#5e6659','#6a705f']:deepPine?['#344a37','#3a503b','#304433','#40543c']:clearing?['#6b8052','#75895a','#647b4d','#708457']:['#526b4b','#637b54','#58724e','#5b754f','#4f6849'];
+  ctx.fillStyle=ground[(seed>>>0)%ground.length];ctx.fillRect(px,py,T,T);
+  // Blöta, mörka pölar och vass i sänkorna; små ljusa stenar i stenmarken.
+  if(swamp&&seed%5===0){ctx.fillStyle='#263f3b';ctx.globalAlpha=.62;ctx.beginPath();ctx.ellipse(px+((seed>>>4)%22),py+((seed>>>9)%20),5+(seed%8),3+(seed%4),seed%3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;if(seed%3===0){ctx.strokeStyle='#82906a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+7,py+17);ctx.lineTo(px+8,py+10);ctx.moveTo(px+11,py+19);ctx.lineTo(px+14,py+12);ctx.stroke()}}
+  if(rockland&&seed%3===0){ctx.fillStyle='#929383';ctx.fillRect(px+((seed>>>3)%20),py+((seed>>>8)%20),3+(seed%3),2);ctx.fillStyle='#414a40';ctx.fillRect(px+((seed>>>5)%23),py+((seed>>>10)%22),2,2)}
+  if(deepPine&&seed%6===0){ctx.fillStyle='#263b2b';ctx.globalAlpha=.35;ctx.fillRect(px,py,T,T);ctx.globalAlpha=1}
+  if(clearing&&seed%9===0){ctx.fillStyle='#a0a36a';ctx.globalAlpha=.25;ctx.fillRect(px+4,py+5,12,7);ctx.globalAlpha=1}
+  // mjuka mossfläckar i oregelbundna former
+  if(seed%4===0){ctx.fillStyle='#78905b';ctx.globalAlpha=.22;ctx.beginPath();ctx.ellipse(px+((seed>>>4)%27),py+((seed>>>9)%25),5+(seed%7),3+(seed%4),seed%3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+  // fallna barr och kvistar, placerade deterministiskt så marken inte flimrar
+  ctx.globalAlpha=.38;ctx.strokeStyle=seed%2?'#394e32':'#a09b6b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+((seed>>>5)%26),py+((seed>>>11)%24));ctx.lineTo(px+((seed>>>5)%26)+3+(seed%5),py+((seed>>>11)%24)-2);ctx.stroke();ctx.globalAlpha=1;
+  if(seed%7===0){ctx.fillStyle='#8a8861';ctx.fillRect(px+((seed>>>3)%24),py+((seed>>>8)%24),2,2)}
+  if(seed%17===0){ctx.fillStyle='#6f8650';ctx.fillRect(px+5,py+18,2,3);ctx.fillRect(px+8,py+16,2,4);ctx.fillRect(px+10,py+19,2,2)}
+ }
+ // Handritade grusvägar med mjuka kurvor, mossiga kanter, hjulspår och småsten.
+ const roadPath=(pts)=>{ctx.beginPath();ctx.moveTo(pts[0][0]-sx,pts[0][1]-sy);for(let i=1;i<pts.length-1;i++){const mx=(pts[i][0]+pts[i+1][0])/2-sx,my=(pts[i][1]+pts[i+1][1])/2-sy;ctx.quadraticCurveTo(pts[i][0]-sx,pts[i][1]-sy,mx,my)}const last=pts[pts.length-1];ctx.lineTo(last[0]-sx,last[1]-sy)};
+ const road=(pts,width)=>{
+  roadPath(pts);ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#26382a';ctx.lineWidth=width+18;ctx.stroke();
+  roadPath(pts);ctx.strokeStyle='#526044';ctx.lineWidth=width+10;ctx.stroke();
+  roadPath(pts);ctx.strokeStyle='#766f53';ctx.lineWidth=width;ctx.stroke();
+  roadPath(pts);ctx.strokeStyle='#9b9271';ctx.lineWidth=width-8;ctx.stroke();
+  roadPath(pts);ctx.strokeStyle='#b8ad88';ctx.lineWidth=Math.max(8,width-19);ctx.stroke();
+  // Ojämna, slitna kanter och partier med mörkare packad jord.
+  roadPath(pts);ctx.strokeStyle='#d1c49b';ctx.globalAlpha=.28;ctx.lineWidth=Math.max(3,width*.16);ctx.stroke();ctx.globalAlpha=1;
+  roadPath(pts);ctx.strokeStyle='#6b6249';ctx.globalAlpha=.45;ctx.lineWidth=Math.max(2,width*.10);ctx.setLineDash([13,17,5,11]);ctx.lineDashOffset=7;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  // Två slitna hjulspår, brutna och lite ojämna som på en gammal skogsväg.
+  for(const side of [-1,1]){roadPath(pts);ctx.strokeStyle='#766e53';ctx.lineWidth=Math.max(2,width*.085);ctx.globalAlpha=.72;ctx.setLineDash([19,13]);ctx.lineDashOffset=side*9;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1}
+  // Slumpmässigt placerade småstenar följer vägen och bryter upp den platta färgen.
+  ctx.save();ctx.globalAlpha=.48;for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],len=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.floor(len/18);for(let j=0;j<n;j++){const t=(j+.37)/Math.max(1,n),wx=a[0]+(b[0]-a[0])*t,wy=a[1]+(b[1]-a[1])*t;const seed=(i*131+j*47+pts.length*17),off=((seed%19)-9)*(width/40);const px=wx-sx+off,py=wy-sy+((seed%11)-5)*(width/55);if(px>-5&&py>-5&&px<W+5&&py<H+5){ctx.fillStyle=seed%3?'#d0c39a':'#5e5a43';ctx.fillRect(px,py,seed%4===0?3:2,2)}}}ctx.restore();
+ };
+ const mainRoad=[[worldStart.x-250,worldStart.y-250],[worldStart.x-105,worldStart.y-175],[worldStart.x+30,worldStart.y-95],[worldStart.x+170,worldStart.y-40],[worldStart.x+250,worldStart.y+5],[worldStart.x+390,worldStart.y-20],[worldStart.x+500,worldStart.y-65],[worldStart.x+650,worldStart.y-20],[worldStart.x+760,worldStart.y+35],[bossPoint.x+70,bossPoint.y-55],[bossPoint.x+180,bossPoint.y+10],[Math.min(mapW*T-30,bossPoint.x+360),bossPoint.y+80]];
+ road(mainRoad,42);
+ const branchA=[[worldStart.x-135,worldStart.y+105],[worldStart.x-170,worldStart.y+150],[worldStart.x-205,worldStart.y+220],[worldStart.x-255,worldStart.y+265],[worldStart.x-310,worldStart.y+330]];road(branchA,29);
+ const branchB=[[worldStart.x+40,worldStart.y-100],[worldStart.x+74,worldStart.y-38],[merchant.x+10,merchant.y+40],[worldStart.x+15,worldStart.y+70],[base.x+20,base.y+85]];road(branchB,27);
+ // Smala avstickare ut till stugor och gläntor gör att vägarna känns som ett nätverk.
+ const sideRoad1=[[worldStart.x+470,worldStart.y-55],[worldStart.x+545,worldStart.y-135],[worldStart.x+655,worldStart.y-190],[worldStart.x+760,worldStart.y-215]];road(sideRoad1,19);
+ const sideRoad2=[[worldStart.x+820,worldStart.y+45],[worldStart.x+900,worldStart.y+110],[worldStart.x+1030,worldStart.y+125],[worldStart.x+1110,worldStart.y+195]];road(sideRoad2,21);
+ const sideRoad3=[[bossPoint.x-180,bossPoint.y-35],[bossPoint.x-120,bossPoint.y+70],[bossPoint.x-70,bossPoint.y+165],[bossPoint.x+35,bossPoint.y+215]];road(sideRoad3,18);
+ // Långa skogsvägar och avstickare genom hela den utökade världen.
+ const remoteRoads=[
+  [[worldStart.x-350,worldStart.y-520],[worldStart.x+80,worldStart.y-690],[worldStart.x+650,worldStart.y-720],[worldStart.x+1250,worldStart.y-610],[worldStart.x+1780,worldStart.y-790],[worldStart.x+2450,worldStart.y-720]],
+  [[worldStart.x+220,worldStart.y+360],[worldStart.x+620,worldStart.y+590],[worldStart.x+1120,worldStart.y+650],[worldStart.x+1620,worldStart.y+900],[worldStart.x+2260,worldStart.y+860],[worldStart.x+2850,worldStart.y+1080]],
+  [[worldStart.x+1050,worldStart.y-360],[worldStart.x+1300,worldStart.y-40],[worldStart.x+1510,worldStart.y+330],[worldStart.x+1880,worldStart.y+520],[worldStart.x+2220,worldStart.y+430]],
+  [[worldStart.x-420,worldStart.y+850],[worldStart.x+120,worldStart.y+1040],[worldStart.x+650,worldStart.y+1180],[worldStart.x+980,worldStart.y+1510],[worldStart.x+1570,worldStart.y+1640]],
+  [[worldStart.x+2600,worldStart.y-300],[worldStart.x+3050,worldStart.y-100],[worldStart.x+3450,worldStart.y+240],[worldStart.x+3900,worldStart.y+180],[worldStart.x+4450,worldStart.y+450]],
+  [[bossPoint.x-800,bossPoint.y+650],[bossPoint.x-500,bossPoint.y+950],[bossPoint.x-120,bossPoint.y+1150],[bossPoint.x+420,bossPoint.y+1280]]
+ ];
+ remoteRoads.forEach((pts,i)=>road(pts,i%2?18:22));
+ // Sector borders and labels: 24 distinct farm zones across the giant map.
+ ctx.save();ctx.lineWidth=1;ctx.strokeStyle='#d1d8a5';ctx.globalAlpha=.12;for(let gx=0;gx<=mapW;gx+=sectorW){ctx.beginPath();ctx.moveTo(gx*T-sx,0);ctx.lineTo(gx*T-sx,H);ctx.stroke()}for(let gy=0;gy<=mapH;gy+=sectorH){ctx.beginPath();ctx.moveTo(0,gy*T-sy);ctx.lineTo(W,gy*T-sy);ctx.stroke()}ctx.globalAlpha=.66;ctx.font='bold 12px monospace';ctx.textAlign='center';for(let yy=0;yy<4;yy++)for(let xx=0;xx<6;xx++){let lx=(xx*sectorW+sectorW/2)*T-sx,ly=(yy*sectorH+22)*T-sy;if(lx>-180&&lx<W+180&&ly>-30&&ly<H+30){ctx.fillStyle='#1b261fbb';ctx.fillRect(lx-93,ly-13,186,22);ctx.fillStyle='#f0e8c2';ctx.fillText(sectorNames[yy][xx],lx,ly+2)}}ctx.restore();
+ for(const s of scenery){let x=s.x-sx,y=s.y-sy;if(x<-130||y<-110||x>W+130||y>H+110)continue;
+  if(s.type==='tree'||s.type==='pine'){
+   // Rich layered top-down canopy: deep shadow, irregular leaf masses, highlights and tiny leaf clusters.
+   const pine=s.type==='pine', cx=x+s.w*.5, cy=y+s.h*.48, rx=s.w*.52, ry=s.h*.47;
+   ctx.fillStyle='#101c16';ctx.beginPath();ctx.ellipse(cx+3,cy+ry*.65,rx*1.05,ry*.48,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=pine?'#203b2a':'#23442b';ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.fill();
+   // overlapping boughs give each tree a hand-painted scalloped silhouette
+   const lobes=pine?7:10;
+   for(let k=0;k<lobes;k++){
+    const a=(Math.PI*2*k/lobes)+(Math.floor(s.x+s.y)%7)*.07;
+    const bx=cx+Math.cos(a)*rx*.52, by=cy+Math.sin(a)*ry*.52;
+    const rr= (pine?.25:.30)+((k*7+Math.floor(s.x))%4)*.025;
+    ctx.fillStyle=['#2e5634','#37663a','#427442','#315d35'][Math.abs(k+Math.floor(s.y))%4];
+    ctx.beginPath();ctx.ellipse(bx,by,rx*rr,ry*rr, a*.2,0,Math.PI*2);ctx.fill();
+   }
+   // broken light from above, plus small leaf-shaped highlights
+   for(let k=0;k<14;k++){
+    const seed=Math.abs(Math.floor(s.x*13+s.y*7+k*31));
+    const bx=cx- rx*.72+(seed%100)/100*rx*1.42;
+    const by=cy- ry*.70+((seed*7)%100)/100*ry*1.38;
+    ctx.fillStyle=['#527f43','#6d9650','#8aaa5b','#3f7040'][seed%4];
+    ctx.globalAlpha=.48+(seed%4)*.09;ctx.beginPath();ctx.ellipse(bx,by,2+(seed%3),1.5+(seed%2),seed%6,0,Math.PI*2);ctx.fill();
+   }
+   ctx.globalAlpha=1;
+   ctx.strokeStyle=pine?'#4c7040':'#5a8245';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx-rx*.12,cy-ry*.12,Math.min(rx,ry)*.62,3.55,5.45);ctx.stroke();
+   ctx.fillStyle='#9dbb69';ctx.globalAlpha=.55;ctx.fillRect(cx-rx*.35,cy-ry*.43,3,2);ctx.fillRect(cx+rx*.12,cy-ry*.26,4,2);ctx.fillRect(cx-rx*.02,cy+ry*.03,3,2);ctx.globalAlpha=1;
+  }
+  else if(s.type==='fern'||s.type==='bush'){
+   ctx.fillStyle='#263a27';ctx.beginPath();ctx.ellipse(x+s.w*.52,y+s.h*.70,s.w*.52,s.h*.23,0,0,Math.PI*2);ctx.fill();
+   for(let k=0;k<6;k++){let ax=x+s.w*.5,ay=y+s.h*.72;ctx.strokeStyle=k%2?'#557849':'#78915a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(x+s.w*((k%3)*.27+.12),y+s.h*(.15+(k%2)*.18),x+s.w*((k%3)*.27+.12),y+s.h*(.25+(k%2)*.18));ctx.stroke();ctx.fillStyle=k%2?'#3f6940':'#688750';ctx.fillRect(x+s.w*((k%3)*.27+.1),y+s.h*(.2+(k%2)*.18),5,3)}
+  }
+  else if(s.type==='log'){ctx.save();ctx.translate(x+s.w/2,y+s.h/2);ctx.rotate(((Math.floor(s.x+s.y)%5)-2)*.12);ctx.fillStyle='#332d22';ctx.fillRect(-s.w*.48,-4,s.w*.96,10);ctx.fillStyle='#71583a';ctx.fillRect(-s.w*.48,-5,s.w*.88,7);ctx.fillStyle='#b09160';ctx.fillRect(-s.w*.45,-4,4,6);ctx.fillStyle='#3c3325';ctx.fillRect(-s.w*.15,-4,2,6);ctx.restore()}
+  else if(s.type==='flowers'){ctx.fillStyle='#3e5b35';ctx.fillRect(x+s.w*.48,y+s.h*.3,2,s.h*.6);for(let k=0;k<4;k++){ctx.fillStyle=['#d6c7a0','#c9b8d0','#e0d5a4'][(k+Math.floor(s.x))%3];ctx.fillRect(x+((k*7)%Math.max(8,s.w)),y+((k*5)%Math.max(8,s.h)),3,3)}}
+  else if(s.type==='mushroom'){ctx.fillStyle='#c8bda0';ctx.fillRect(x+s.w*.45,y+s.h*.42,3,7);ctx.fillStyle='#a65b42';ctx.fillRect(x+s.w*.25,y+s.h*.32,8,4);ctx.fillStyle='#e0c9a0';ctx.fillRect(x+s.w*.35,y+s.h*.32,2,2)}
+  else if(s.type==='moss'){ctx.fillStyle='#536d43';ctx.globalAlpha=.65;ctx.beginPath();ctx.ellipse(x+s.w/2,y+s.h/2,s.w*.5,s.h*.3,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle='#80905a';ctx.fillRect(x+s.w*.3,y+s.h*.35,4,2)}
+  else if(s.type==='deadpine'){ctx.fillStyle='#392f23';ctx.fillRect(x+s.w*.43,y+s.h*.3,5,s.h*.7);ctx.strokeStyle='#5d4b34';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+s.w*.45,y+s.h*.45);ctx.lineTo(x+s.w*.08,y+s.h*.2);ctx.moveTo(x+s.w*.45,y+s.h*.55);ctx.lineTo(x+s.w*.86,y+s.h*.32);ctx.moveTo(x+s.w*.45,y+s.h*.35);ctx.lineTo(x+s.w*.63,y+2);ctx.stroke();ctx.fillStyle='#594834';ctx.fillRect(x+s.w*.3,y+s.h*.72,15,3)}
+  else if(s.type==='stump'){ctx.fillStyle='#4d3d2a';ctx.fillRect(x+4,y+7,15,14);ctx.fillStyle='#9b8054';ctx.fillRect(x+2,y+4,19,7);ctx.fillStyle='#c0a477';ctx.fillRect(x+6,y+5,10,4)}
+  else if(s.type==='rock'){ctx.fillStyle='#25372c';ctx.beginPath();ctx.ellipse(x+s.w*.5,y+s.h*.67,s.w*.43,s.h*.28,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#5d6d5c';ctx.beginPath();ctx.moveTo(x+3,y+s.h*.55);ctx.lineTo(x+s.w*.27,y+4);ctx.lineTo(x+s.w*.68,y+2);ctx.lineTo(x+s.w-2,y+s.h*.42);ctx.lineTo(x+s.w*.78,y+s.h*.78);ctx.lineTo(x+5,y+s.h*.8);ctx.closePath();ctx.fill();ctx.fillStyle='#a0a68a';ctx.fillRect(x+s.w*.28,y+6,Math.max(3,s.w*.22),2);ctx.fillStyle='#3a4a3b';ctx.fillRect(x+s.w*.62,y+s.h*.43,3,2)}
+  else if(s.type==='cabin'){ctx.fillStyle='#273128';ctx.fillRect(x+3,y+9,s.w,s.h);ctx.fillStyle='#786447';ctx.fillRect(x,y+7,s.w,s.h-7);ctx.fillStyle='#493d2d';ctx.beginPath();ctx.moveTo(x-5,y+9);ctx.lineTo(x+s.w*.5,y-8);ctx.lineTo(x+s.w+5,y+9);ctx.closePath();ctx.fill();ctx.fillStyle='#1b211b';ctx.fillRect(x+s.w*.42,y+s.h*.52,12,s.h*.48);ctx.fillStyle='#c5b278';ctx.fillRect(x+9,y+18,9,8)}
+  else if(s.type==='building'){ctx.fillStyle='#343b34';ctx.fillRect(x+5,y+7,s.w,s.h);ctx.fillStyle='#7b8172';ctx.fillRect(x,y,s.w,s.h);ctx.fillStyle='#555f52';ctx.fillRect(x+5,y+5,s.w-10,s.h-10);ctx.fillStyle='#596056';for(let wx=x+10;wx<x+s.w-7;wx+=18)for(let wy=y+10;wy<y+s.h-7;wy+=17){ctx.fillStyle=((Math.floor(wx)+Math.floor(wy))%7===0)?'#d2b978':'#2e3c37';ctx.fillRect(wx,wy,8,7)}ctx.fillStyle='#697267';ctx.fillRect(x,y,s.w,4);ctx.fillStyle='#131918';ctx.fillRect(x+s.w*.35,y+s.h*.65,12,16)}
+  else if(s.type==='car'||s.type==='wreck'){ctx.fillStyle='#101514';ctx.fillRect(x+4,y+5,s.w,s.h);ctx.fillStyle=s.type==='car'?'#788777':'#8a7560';ctx.fillRect(x,y,s.w,s.h);ctx.fillStyle='#354a45';ctx.fillRect(x+7,y+5,s.w-14,s.h-10);ctx.fillStyle='#0b1010';ctx.fillRect(x+10,y+3,10,5);ctx.fillRect(x+s.w-20,y+3,10,5);ctx.fillStyle='#8a4435';ctx.fillRect(x+s.w-6,y+6,4,5);ctx.fillStyle='#111514';ctx.fillRect(x+8,y+s.h-3,9,5);ctx.fillRect(x+s.w-18,y+s.h-3,9,5);ctx.fillStyle='#b0a58a';ctx.fillRect(x+s.w*.45,y+2,7,3)}
+  else if(s.type==='barricade'){ctx.fillStyle='#92764d';ctx.fillRect(x,y,s.w,s.h);ctx.fillStyle='#8a6c43';ctx.fillRect(x+2,y+5,s.w-4,5);ctx.fillRect(x+2,y+s.h-10,s.w-4,5)}
+  else if(s.type==='rubble'){ctx.fillStyle='#9ba58a';ctx.fillRect(x,y,s.w,s.h);ctx.fillStyle='#303a34';ctx.fillRect(x+3,y+2,s.w*.45,s.h*.5)}
+  else if(s.type==='weed'){ctx.fillStyle='#718a51';ctx.fillRect(x,y,3,9);ctx.fillRect(x+5,y+4,4,6)}
+  else {ctx.strokeStyle='#424c42';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+s.w,y+s.h);ctx.stroke()}
+ }
+ // Spelarbyggda väggar: sparas mellan spelomgångar.
+ for(const w of builtWalls){let x=w.x-sx,y=w.y-sy;if(x<-30||y<-30||x>W+30||y>H+30)continue;ctx.fillStyle='#111714';ctx.fillRect(x-13,y-12,28,26);ctx.fillStyle='#725b3e';ctx.fillRect(x-14,y-13,28,23);ctx.fillStyle='#a48a5d';ctx.fillRect(x-14,y-13,28,4);ctx.fillStyle='#4a4c3c';ctx.fillRect(x-10,y-6,20,3);ctx.fillRect(x-10,y+2,20,3);ctx.fillStyle='#8a7650';ctx.fillRect(x-3,y-12,3,21)}
+ // Säkerhetsstaket runt basen och Roffe, med en tydlig grind på södra sidan.
+ {const r=safeYard(),x=r.left-sx,y=r.top-sy,w=r.right-r.left,h=r.bottom-r.top;
+  if(x<W+40&&x+w>-40&&y<H+40&&y+h>-40){
+   ctx.save();ctx.lineWidth=5;ctx.strokeStyle='#3c4035';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.moveTo(x,y);ctx.lineTo(x,y+h);ctx.moveTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.moveTo(x,y+h);ctx.lineTo(r.gateX-r.gateHalf-sx,y+h);ctx.moveTo(r.gateX+r.gateHalf-sx,y+h);ctx.lineTo(x+w,y+h);ctx.stroke();
+   ctx.lineWidth=2;ctx.strokeStyle='#9a8b65';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.moveTo(x,y);ctx.lineTo(x,y+h);ctx.moveTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.moveTo(x,y+h);ctx.lineTo(r.gateX-r.gateHalf-sx,y+h);ctx.moveTo(r.gateX+r.gateHalf-sx,y+h);ctx.lineTo(x+w,y+h);ctx.stroke();
+   for(let fx=r.left;fx<=r.right;fx+=24){let qx=fx-sx;ctx.fillStyle='#514d3c';ctx.fillRect(qx-3,y-5,6,13);ctx.fillRect(qx-3,y+h-5,6,13)}
+   for(let fy=r.top;fy<=r.bottom;fy+=24){let qy=fy-sy;ctx.fillStyle='#514d3c';ctx.fillRect(x-3,qy-3,6,7);ctx.fillRect(x+w-3,qy-3,6,7)}
+   // Grindbladet är öppet så spelaren tydligt ser var man går in.
+   let gx=r.gateX-sx,gy=r.bottom-sy;ctx.fillStyle='#242b24';ctx.fillRect(gx-r.gateHalf,gy-4,r.gateHalf*2,8);ctx.fillStyle='#b9a16b';ctx.fillRect(gx-r.gateHalf,gy-7,5,15);ctx.fillRect(gx+r.gateHalf-5,gy-7,5,15);ctx.strokeStyle='#c5b17d';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(gx-r.gateHalf+4,gy-2);ctx.lineTo(gx+r.gateHalf-4,gy-2);ctx.stroke();
+   ctx.fillStyle='#f1e5bd';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('TRYGG ZON · GRIND',gx,gy+20);ctx.textAlign='left';
+  }ctx.restore()}
+ // glowing boss-zone beacon: objective landmark in the eastern district
+ if(!bossSpawned){let bx=bossPoint.x-sx,by=bossPoint.y-sy;if(bx>-40&&by>-40&&bx<W+40&&by<H+40){ctx.fillStyle='#d94b3b22';ctx.beginPath();ctx.arc(bx,by,42,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e45c48';ctx.fillRect(bx-8,by-8,16,16);ctx.fillStyle='#ffe1a0';ctx.fillRect(bx-3,by-24,6,12);ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('SIGNALSTATION',bx,by-32);ctx.textAlign='left'}}
+ // Player's hideout: a little fortified shack with a warm lamp and a visible workbench.
+ {let x=base.x-sx,y=base.y-sy;if(x>-100&&y>-100&&x<W+100&&y<H+100){ctx.fillStyle='#080b0b77';ctx.fillRect(x-48,y+30,100,10);ctx.fillStyle='#4b5044';ctx.fillRect(x-48,y-28,96,60);ctx.fillStyle='#777761';ctx.fillRect(x-53,y-35,106,16);ctx.fillStyle='#5b5e4d';ctx.fillRect(x-40,y-20,80,45);ctx.fillStyle='#313d32';ctx.fillRect(x-31,y-11,22,17);ctx.fillRect(x+10,y-11,22,17);ctx.fillStyle='#d9c67b';ctx.fillRect(x-25,y-7,10,9);ctx.fillRect(x+16,y-7,10,9);ctx.fillStyle='#332f26';ctx.fillRect(x-10,y+1,23,31);ctx.fillStyle='#7c6846';ctx.fillRect(x-9,y+2,21,30);ctx.fillStyle='#b8d67a';ctx.fillRect(x+4,y+14,3,3);ctx.fillStyle='#2b3328';ctx.fillRect(x-45,y-39,90,5);ctx.fillStyle='#e6e8c5';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('DITT GÖMSTÄLLE',x,y-49);ctx.textAlign='left';if(dist(player,base)<110){ctx.fillStyle='#f0e8b9';ctx.fillRect(x-47,y-65,94,15);ctx.fillStyle='#17201b';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText('[ B ] BAS / VERKSTAD',x,y-54);ctx.textAlign='left'}}}
+ // Trader Roffe at the starting camp. Stand close and press F to sell all scrap.
+ {let x=merchant.x-sx,y=merchant.y-sy;if(x>-50&&y>-60&&x<W+50&&y<H+60){ctx.fillStyle='#080b0b77';ctx.fillRect(x-13,y+12,27,6);ctx.fillStyle='#4c5c49';ctx.fillRect(x-10,y-10,20,23);ctx.fillStyle='#b8a17b';ctx.fillRect(x-8,y-20,16,12);ctx.fillStyle='#d6c39b';ctx.fillRect(x-8,y-23,16,5);ctx.fillStyle='#2b3731';ctx.fillRect(x-10,y-26,20,5);ctx.fillStyle='#f0d8a2';ctx.fillRect(x-5,y-16,3,2);ctx.fillRect(x+3,y-16,3,2);ctx.fillStyle='#c4a66b';ctx.fillRect(x-15,y-2,5,14);ctx.fillRect(x+10,y-2,5,14);ctx.fillStyle='#e5e1be';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('ROFFE · HANDLARE',x,y-34);ctx.textAlign='left';if(dist(player,merchant)<72){ctx.fillStyle='#f0e8b9';ctx.fillRect(x-45,y-48,90,15);ctx.fillStyle='#17201b';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText('[ F ] BUTIK',x,y-37);ctx.textAlign='left'}}}
+ // Vägskyltar med tydliga pilar vid startlägret.
+ function drawSign(wx,wy,label,arrow){
+  const x=wx-sx,y=wy-sy;
+  if(x < -130 || y < -100 || x > W+130 || y > H+100) return;
+  ctx.save();
+  // trästolpe och skyltbräda
+  ctx.fillStyle='#342d22';ctx.fillRect(x-3,y-1,6,29);
+  ctx.fillStyle='#765b39';ctx.fillRect(x-37,y-18,74,21);
+  ctx.fillStyle='#b39a68';ctx.fillRect(x-37,y-18,74,3);ctx.fillRect(x-37,y+1,74,2);
+  ctx.fillStyle='#202821';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.fillText(label,x,y-5);
+  ctx.fillStyle='#d9e8a7';ctx.font='bold 14px monospace';ctx.fillText(arrow,x,y+12);
+  ctx.restore();
+ }
+ drawSign(worldStart.x-36,worldStart.y-76,'STARTLÄGER','↓');
+ drawSign(merchant.x+30,merchant.y-57,'ROFFE','→');
+ drawSign(base.x-28,base.y+62,'BASEN','←');
+ drawSign(worldStart.x+190,worldStart.y+45,'LOOT / SKROT','→');
+ drawSign(worldStart.x+315,worldStart.y-65,'RITNINGAR','→');
+ drawSign(bossPoint.x,bossPoint.y-62,'SIGNALSTATION','→');
+ // Kompasshjälp: riktning från spelaren till bas, Roffe och signalstation.
+ {const targets=[{name:'BAS',p:base,color:'#b8d67a'},{name:'ROFFE',p:merchant,color:'#e5d19a'},{name:'SIGNAL',p:bossPoint,color:'#e45c48'}];
+  ctx.save();ctx.fillStyle='#101817d9';ctx.fillRect(10,10,174,61);ctx.strokeStyle='#71816b';ctx.strokeRect(10.5,10.5,173,60);
+  ctx.font='bold 10px monospace';ctx.textAlign='left';ctx.fillStyle='#dce5d1';ctx.fillText('VÄGVISARE',19,24);
+  targets.forEach((t,i)=>{let dx=t.p.x-player.x,dy=t.p.y-player.y,ang=Math.atan2(dy,dx);let arrow=Math.abs(dx)>Math.abs(dy)?(dx>0?'→':'←'):(dy>0?'↓':'↑');ctx.fillStyle=t.color;ctx.fillText(t.name+' '+arrow+' '+Math.round(Math.hypot(dx,dy)/T)+' rutor',19,38+i*14)});
+  ctx.restore();}
+ // loot glows
+ for(const l of loot){let x=l.x-sx,y=l.y-sy+Math.sin(l.bob)*2;if(x< -20||y< -20||x>W+20||y>H+20)continue;ctx.fillStyle='#d7d18b22';ctx.fillRect(x-9,y-9,18,18);ctx.fillStyle=l.type.startsWith('bp_')?'#72e6ed':({scrap:'#a7b2a3',food:'#c7a25f',med:'#d77869',ammo:'#d5c16c',pistol:'#e5b94c',signal_core:'#ff5e9a'})[l.type];ctx.fillRect(x-5,y-5,(l.type==='pistol'||l.type==='signal_core'||l.type.startsWith('bp_'))?14:10,(l.type==='pistol'||l.type==='signal_core'||l.type.startsWith('bp_'))?9:10);ctx.fillStyle='#e7e5cb';ctx.fillRect(x-2,y-2,4,4);if(l.type.startsWith('bp_')){ctx.strokeStyle='#72e6ed';ctx.strokeRect(x-9,y-9,18,18)}if(l.type==='signal_core'){ctx.strokeStyle='#ff5e9a';ctx.strokeRect(x-10,y-10,20,20)}}
+ // enemies and milestone boss
+ for(const e of enemies){let x=e.x-sx,y=e.y-sy;if(x< -70||y< -70||x>W+70||y>H+70)continue;ctx.save();ctx.translate(x,y);let bob=Math.sin(e.phase)*1.5;if(e.type==='boss'){ctx.fillStyle='#34241f';ctx.fillRect(-31,-16+bob,62,46);ctx.fillStyle='#765044';ctx.fillRect(-26,-36+bob,52,40);ctx.fillStyle='#a43e32';ctx.fillRect(-23,-42+bob,46,18);ctx.fillStyle='#ffcf78';ctx.fillRect(-15,-33+bob,8,6);ctx.fillRect(8,-33+bob,8,6);ctx.fillStyle='#c6a68a';ctx.fillRect(-38,-8+bob,13,30);ctx.fillRect(25,-8+bob,13,30);ctx.fillStyle='#f2d7b0';ctx.fillRect(-24,10+bob,15,7);ctx.fillRect(9,10+bob,15,7);ctx.fillStyle='#382e2a';ctx.fillRect(-35,-55,70,5);ctx.fillStyle='#d84c3f';ctx.fillRect(-35,-55,70*Math.max(0,e.hp/e.maxHp),5);ctx.fillStyle='#ffe2a1';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('KÖTTBERGET',0,-62);ctx.textAlign='left'}else{ctx.fillStyle='#111514';ctx.fillRect(-10,-5+bob,20,16);ctx.fillStyle=e.type==='mutant'?'#7a6652':'#61785c';ctx.fillRect(-8,-12+bob,16,19);ctx.fillStyle=e.type==='mutant'?'#aa6b53':'#8b9c6b';ctx.fillRect(-7,-15+bob,14,9);ctx.fillStyle='#d9c88c';ctx.fillRect(-5,-12+bob,3,2);ctx.fillRect(2,-12+bob,3,2);ctx.fillStyle='#26382a';ctx.fillRect(-12,0+bob,4,10);ctx.fillRect(8,0+bob,4,10);if(e.type==='mutant'){ctx.fillStyle='#a94e42';ctx.fillRect(-12,-17+bob,5,5);ctx.fillRect(7,-18+bob,5,5)}ctx.fillStyle='#26312d';ctx.fillRect(-10,-21,20,3);ctx.fillStyle='#c86b5b';ctx.fillRect(-10,-21,20*Math.max(0,e.hp/e.maxHp),3)}ctx.restore()}
+ // player shadow + sprite
+ let px=player.x-sx,py=player.y-sy;ctx.fillStyle='#080b0b88';ctx.fillRect(px-10,py+8,21,6);if(invuln>0&&Math.floor(invuln*16)%2===0)ctx.globalAlpha=.35;ctx.fillStyle='#23342f';ctx.fillRect(px-9,py-8,18,19);ctx.fillStyle='#6e8874';ctx.fillRect(px-7,py-14,14,10);ctx.fillStyle='#b7bba0';ctx.fillRect(px-5,py-12,10,5);ctx.fillStyle='#171f1d';ctx.fillRect(px-4,py-4,8,4);ctx.fillStyle='#9aab91';ctx.fillRect(px-10,py-5,4,9);ctx.fillRect(px+6,py-5,4,9);ctx.fillStyle='#d3d6b7';ctx.fillRect(px+player.faceX*9-2,py+player.faceY*7-11,4,3);
+ // weapon held in the direction the survivor faces
+ ctx.save();ctx.translate(px+player.faceX*10,py+player.faceY*7-2);ctx.rotate(Math.atan2(player.faceY,player.faceX));if(player.weapon==='pistol'){ctx.fillStyle='#242b2b';ctx.fillRect(0,-3,11,6);ctx.fillStyle='#a9b6a8';ctx.fillRect(7,-5,9,3);ctx.fillStyle='#69533b';ctx.fillRect(2,2,5,5)}else{ctx.fillStyle='#65503b';ctx.fillRect(0,-2,7,4);ctx.fillStyle='#b8c4bd';ctx.fillRect(6,-2,10,3);ctx.fillStyle='#e0e8df';ctx.fillRect(14,-2,3,1)}ctx.restore();ctx.globalAlpha=1;
+ // darkness overlay with flashlight cone-ish radial light
+ ctx.fillStyle='rgba(4,8,9,.22)';ctx.fillRect(0,0,W,H);let g=ctx.createRadialGradient(px,py,50,px,py,310);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.55,'rgba(0,0,0,.03)');g.addColorStop(1,'rgba(0,0,0,.32)');ctx.globalCompositeOperation='destination-out';ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';
+ // HUD pickup prompt and combat hint
+ let near=loot.some(l=>dist(l,player)<48+progression.stats.survival*8);if(near){ctx.fillStyle='#dce8ce';ctx.font='12px monospace';ctx.textAlign='center';ctx.fillText('[ E ] PLOCKA UPP',px,py-28);ctx.textAlign='left'}
+ ctx.strokeStyle='#d5e0c7';ctx.globalAlpha=.65;ctx.strokeRect(px-2,py-2,4,4);ctx.globalAlpha=1;
+ // vignette
+ let vg=ctx.createRadialGradient(W/2,H/2,150,W/2,H/2,500);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.4)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+}
+function frame(t){let dt=Math.min(.04,(t-last)/1000||0);last=t;if(running)update(dt);draw();requestAnimationFrame(frame)}
+function start(){
+ const btn=$('start'), overlay=$('overlay');
+ btn.textContent='[ STARTAR... ]'; btn.disabled=true;
+ try {
+   // Run reset synchronously and expose any runtime error instead of silently failing.
+   reset();
+   running=true;
+   overlay.classList.add('hidden');
+   btn.disabled=false;
+   btn.textContent='[ STARTA SPELET ]';
+   c.focus();
+   last=performance.now();
+ } catch(err) {
+   running=false;
+   btn.disabled=false;
+   btn.textContent='[ FÖRSÖK IGEN ]';
+   overlay.classList.remove('hidden');
+   $('overlayTitle').textContent='STARTFEL';
+   $('overlayText').textContent='Spelet kunde inte starta: '+(err && err.message ? err.message : String(err))+'. Skicka gärna en bild av detta fel till Tic.';
+   console.error('Kalla kvarter startfel:',err);
+ }
+}
+// Bind both click and pointer activation for browser compatibility.
+$('start').addEventListener('click', function(ev){ev.preventDefault(); start();});
+$('start').addEventListener('pointerup', function(ev){ if(ev.pointerType==='touch'){ev.preventDefault(); start();} });
+window.addEventListener('error', function(ev){ console.error('Kalla kvarter JS-fel:',ev.message,ev.filename,ev.lineno); });
+const guideSections=[
+['FÖRSTA STEGEN', ['Starta en ny runda','Lär dig röra dig med W, A, S och D','Prova piltangenterna för rörelse','Läs kontrollerna i sidopanelen','Hitta din spelare på kartan','Gå en kort runda runt startlägret','Leta efter skyltarna vid lägret','Hitta grinden i säkerhetsstaketet','Gå ut genom grinden','Återvänd till tryggheten vid basen']],
+['ÖVERLEVNAD', ['Kontrollera din hälsa','Kontrollera din ork','Lär dig springa med SHIFT','Spring en kort sträcka utan att tömma orken','Hitta ett bandage','Använd bandage med Q när du behöver läka','Undvik att bli omringad','Prova dodge med X','Öva parry med V','Överlev din första fiendekontakt']],
+['SKROT OCH LOOT', ['Hitta din första skrotdel','Plocka upp föremål med E','Samla fem skrotdelar','Hitta mat i skogen','Hitta ammunition','Hitta ett bandage till','Lär dig känna igen blåprints glöd','Plocka upp en blueprint','Samla tio skrotdelar totalt','Kontrollera ryggsäcken efter en loot-runda']],
+['ROFFE OCH HANDEL', ['Hitta Roffe vid startlägret','Gå nära Roffe','Öppna hans butik med F','Kontrollera hur mycket pengar du har','Sälj skrot hos Roffe','Sälj minst fem skrotdelar','Tjäna dina första kronor','Köp mat om du behöver den','Köp ett bandage om du behöver det','Lämna butiken och kontrollera utrustningen']],
+['BASEN', ['Hitta BAS-skylten','Gå in i ditt gömställe','Öppna basmenyn med B','Lägg undan skrot i förrådet','Lägg undan mat i förrådet','Hämta skrot från förrådet','Kontrollera basens material','Spara spelet vid basen','Ladda den sparade rundan','Lär dig vägen från basen till Roffe']],
+['TALENTS OCH SPEC', ['Öppna utvecklingsdelen','Kontrollera din nivå och XP','Lär dig hur färdighetspoäng tjänas','Läs om hälsotalenten','Läs om styrka','Läs om dodge','Läs om parry','Läs om Marksman-specialiseringen','Läs om Tank-specialiseringen','Läs om Kungers-specialiseringen']],
+['STRID', ['Låt kniven automatiskt angripa en nära fiende','Prova en manuell attack med mellanslag','Besegra din första zombie','Besegra fem fiender totalt','Testa dodge precis före en attack','Öva parry mot en fiende','Hitta en pistol','Plocka upp pistolammunition','Låt pistolen angripa en fiende på avstånd','Lämna striden och läka vid behov']],
+['CRAFTING OCH BLUEPRINTS', ['Hitta en blueprint för tillverkning','Öppna crafting med C vid basen','Kontrollera vilka recept som låsts upp','Tillverka ett föremål du har material till','Leta efter en ny blueprint i skogen','Hitta blueprint för utrustning','Hitta blueprint för ammunition','Hitta blueprint för medicinsk utrustning','Hitta byggnadsritningen','Aktivera byggläget när ritningen är upplåst']],
+['UTFORSKA SKOGEN', ['Följ grusvägen bort från startlägret','Utforska en ny sektor','Läs områdesnamnet när du byter zon','Hitta en glänta','Utforska ett stenigt område','Besök ett mörkare skogsparti','Håll utkik efter övergivna platser','Följ vägvisaren mot signalstationen','Samla loot långt från startlägret','Återvänd hem med ditt byte']],
+['STORA MÅL', ['Utforska fem olika sektorer','Utforska tio olika sektorer','Nå en ny nivå','Använd en färdighetspoäng','Uppgradera en talent','Sälj en större skrotrunda till Roffe','Spara efter en lyckad utflykt','Förbered dig innan du går in i farligare områden','Hitta signalstationen','Besegra Köttberget och säkra signalkärnan']]
+];
+const guideTasks=$('guideTasks');let guideDone=JSON.parse(localStorage.getItem('kk_guide_done_v1')||'[]');
+guideSections.forEach((sec,si)=>{const box=document.createElement('section');box.style.cssText='border:1px solid #314244;background:#0b1112;padding:12px';const h=document.createElement('h3');h.textContent=sec[0];h.style.cssText='color:#b8d67a;font-size:12px;margin:0 0 8px';box.appendChild(h);sec[1].forEach((task,ti)=>{const id=si*10+ti;const lab=document.createElement('label');lab.style.cssText='display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid #1c2929;color:#d5dfd7;font-size:11px;cursor:pointer';const cb=document.createElement('input');cb.type='checkbox';cb.checked=guideDone.includes(id);cb.style.marginTop='2px';cb.addEventListener('change',()=>{guideDone=cb.checked?[...new Set([...guideDone,id])]:guideDone.filter(n=>n!==id);localStorage.setItem('kk_guide_done_v1',JSON.stringify(guideDone));updateGuideProgress()});const txt=document.createElement('span');txt.textContent=String(id+1).padStart(2,'0')+'. '+task;lab.append(cb,txt);box.appendChild(lab)});guideTasks.appendChild(box)});
+function updateGuideProgress(){const n=guideDone.length;$('guideProgress').textContent=n+' / 100 klara';$('guideBar').style.width=n+'%'}
+$('openGuide').onclick=()=>$('guide').classList.remove('hidden');$('closeGuide').onclick=()=>$('guide').classList.add('hidden');$('guideReset').onclick=()=>{if(confirm('Vill du nollställa alla 100 guideuppgifter?')){guideDone=[];localStorage.removeItem('kk_guide_done_v1');guideTasks.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);updateGuideProgress()}};$('guide').addEventListener('click',e=>{if(e.target===$('guide'))$('guide').classList.add('hidden')});updateGuideProgress();
+window.addEventListener('keydown',e=>{let k=e.key.length===1?e.key.toLowerCase():e.key;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys[k]=true;if(k===' '||k==='Spacebar')attack();if(k==='e')collect();if(k==='f')openShop();if(k==='c')openCraft();if(k==='b')openBase();if(k==='g')buildWall();if(k==='Escape'){closeShop();closeCraft();closeBase()}if(k==='q')useMed();if(k==='x')doDodge();if(k==='v')doParry()});
+window.addEventListener('keyup',e=>{let k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
+document.querySelectorAll('[data-stat]').forEach(b=>b.onclick=()=>spendPoint(b.dataset.stat));$('respecBtn').onclick=respecBuild;document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>spendSkill(b.dataset.skill));$('useMed').onclick=useMed;$('closeShop').onclick=closeShop;$('closeCraft').onclick=closeCraft;$('closeBase').onclick=closeBase;$('baseCraftBtn').onclick=()=>openCraft();$('buildModeBtn').onclick=toggleBuildMode;$('baseSaveBtn').onclick=saveGame;$('baseLoadBtn').onclick=loadGame;$('stashScrapBtn').onclick=stashScrap;$('withdrawScrapBtn').onclick=withdrawScrap;$('stashFoodBtn').onclick=stashFood;document.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>craftItem(b.dataset.craft));$('sellScrapBtn').onclick=sellScrap;$('saveGameBtn').onclick=saveGame;$('loadGameBtn').onclick=loadGame;document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyItem(b.dataset.buy));$('mobileAttack').onclick=attack;$('mobileLoot').onclick=collect;
+document.querySelectorAll('[data-key]').forEach(b=>{const k=b.dataset.key;const down=e=>{e.preventDefault();keys[k]=true},up=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up)});
+reset();updateCraft();updateBase();requestAnimationFrame(frame);
+})();
+</script></body></html>
